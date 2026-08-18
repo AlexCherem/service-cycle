@@ -8,8 +8,20 @@
     "pnpm": ">=11.0.0"
   },
   "scripts": {
+    "build": "pnpm --recursive --if-present run build",
     "dev": "pnpm --parallel --stream --filter web --filter api run dev",
     "dev:web": "pnpm --filter web dev",
-    "dev:api": "pnpm --filter api dev"
+    "dev:api": "pnpm --filter api dev",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "pnpm --recursive --if-present run lint",
+    "lint:fix": "pnpm --recursive --if-present run lint:fix",
+    "test": "pnpm --recursive --if-present run test",
+    "typecheck": "pnpm --recursive --if-present run typecheck"
+  },
+  "devDependencies": {
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-simple-import-sort": "^14.0.0",
+    "prettier": "^3.9.6"
   }
 }

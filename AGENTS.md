@@ -66,6 +66,15 @@
 - Предпочтительное направление: NestJS DTO как источник Swagger/OpenAPI и генерация типизированного frontend-клиента.
 - Не создавать общий пакет контрактов до первого реального endpoint и отдельного решения по генерации.
 
+## Качество кода
+
+- Общий формат задают корневые `.prettierrc.json` и `.editorconfig`.
+- Проверки из корня: `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
+- Автоисправление: `pnpm format` и `pnpm lint:fix`.
+- `lint` не должен изменять файлы; для изменений существует отдельный `lint:fix`.
+- Импорты автоматически сортирует `eslint-plugin-simple-import-sort`; frontend-группы учитывают слои `app`, `views`, `widgets`, `features`, `entities`, `shared`.
+- Husky, lint-staged и GitHub Actions ещё не подключены; добавлять их отдельным следующим этапом.
+
 ## Ближайшее техническое направление
 
 - Сначала поднять PostgreSQL через Docker Compose, подключить Prisma к NestJS и проверить полный путь `Next.js -> NestJS -> Prisma -> PostgreSQL` на одном небольшом сценарии.
