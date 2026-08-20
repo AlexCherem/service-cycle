@@ -9,6 +9,10 @@
   },
   "scripts": {
     "build": "pnpm --recursive --if-present run build",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres",
+    "db:ps": "docker compose ps",
+    "db:up": "docker compose up -d postgres",
     "dev": "pnpm --parallel --stream --filter web --filter api run dev",
     "dev:web": "pnpm --filter web dev",
     "dev:api": "pnpm --filter api dev",
@@ -17,7 +21,10 @@
     "lint": "pnpm --recursive --if-present run lint",
     "lint:fix": "pnpm --recursive --if-present run lint:fix",
     "test": "pnpm --recursive --if-present run test",
-    "typecheck": "pnpm --recursive --if-present run typecheck"
+    "typecheck": "pnpm --recursive --if-present run typecheck",
+    "db:generate": "pnpm --filter api prisma:generate",
+    "db:migrate": "pnpm --filter api prisma:migrate:dev",
+    "db:validate": "pnpm --filter api prisma:validate"
   },
   "devDependencies": {
     "eslint-config-prettier": "^10.1.8",

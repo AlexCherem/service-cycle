@@ -75,7 +75,15 @@
 - Импорты автоматически сортирует `eslint-plugin-simple-import-sort`; frontend-группы учитывают слои `app`, `views`, `widgets`, `features`, `entities`, `shared`.
 - Husky, lint-staged и GitHub Actions ещё не подключены; добавлять их отдельным следующим этапом.
 
+## Текущее состояние backend-инфраструктуры
+
+- PostgreSQL 17 запускается через корневой `compose.yaml` и доступен с хоста на порту `5433`.
+- Prisma 7 подключён к NestJS через `PrismaModule` и PostgreSQL-драйвер `@prisma/adapter-pg`.
+- Prisma Client генерируется в `apps/api/src/generated/prisma` и не хранится в Git.
+- Корневой `.env` используется Docker Compose; `apps/api/.env` используется NestJS и Prisma.
+- Бизнес-моделей и миграций пока нет.
+
 ## Ближайшее техническое направление
 
-- Сначала поднять PostgreSQL через Docker Compose, подключить Prisma к NestJS и проверить полный путь `Next.js -> NestJS -> Prisma -> PostgreSQL` на одном небольшом сценарии.
-- После инфраструктурной проверки первым продуктовым сценарием должен стать импорт клиентской базы.
+- Первым продуктовым сценарием должен стать импорт клиентской базы.
+- Перед импортом определить минимальные модели компании и клиента, сохраняя изоляцию по `companyId`.
