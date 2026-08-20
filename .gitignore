@@ -22,3 +22,6 @@ coverage/
 
 # Local Docker and database data
 .docker-data/
+
+# Generated Prisma Client
+apps/api/src/generated/prisma/
