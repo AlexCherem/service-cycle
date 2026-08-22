@@ -7,3 +7,27 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Company {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  clients   Client[]
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("companies")
+}
+
+model Client {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @map("company_id") @db.Uuid
+  name      String
+  phone     String?
+  email     String?
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([companyId], map: "clients_company_id_idx")
+  @@map("clients")
+}
