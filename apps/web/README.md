@@ -1,36 +1,123 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Service Cycle Web
 
-## Getting Started
+Frontend-приложение Service Cycle на Next.js App Router, React, TypeScript и
+Ant Design.
 
-First, run the development server:
+## Запуск
+
+Из корня монорепозитория:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm dev:web
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Приложение будет доступно на `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Архитектура
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Используется облегчённый FSD-подход:
 
-## Learn More
+```text
+app → views → widgets → features → entities → shared
+```
 
-To learn more about Next.js, take a look at the following resources:
+- `app` связывает URL с экраном, подключает layouts и providers;
+- `views` собирает целый экран;
+- `widgets` содержит крупные самостоятельные части интерфейса;
+- `features` содержит действия пользователя;
+- `entities` содержит представление бизнес-сущностей;
+- `shared` содержит общий технический код и конфигурацию.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Зависимости направлены только слева направо. Например, `features` не должна
+импортировать код из `views` или `widgets`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Эталонный маршрут
 
-## Deploy on Vercel
+Главная страница и workspace-layout показывают полный путь от маршрута до UI:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```text
+app/(workspace)/layout.tsx → widgets/WorkspaceLayout
+app/(workspace)/page.tsx   → views/OverviewPage
+app/layout.tsx             → app/providers → shared/config/antd
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`page.tsx` остаётся тонким и импортирует конкретный view напрямую:
+
+```tsx
+import { OverviewPage } from '@/views/OverviewPage';
+
+export default function OverviewRoute() {
+  return <OverviewPage />;
+}
+```
+
+Не создавайте общий `views/index.ts` со всеми экранами. У каждого view может
+быть собственный публичный `index.ts`.
+
+## Добавление нового экрана
+
+Для экрана импорта клиентов нужно добавлять структуру вместе с первой реальной
+функциональностью:
+
+```text
+src/
+├── app/(workspace)/clients/import/page.tsx
+├── views/ClientImportPage/
+│   ├── ui/ClientImportPage.tsx
+│   └── index.ts
+└── features/ImportClients/
+    ├── ui/ImportClients.tsx
+    └── index.ts
+```
+
+Распределение ответственности:
+
+1. `page.tsx` импортирует `ClientImportView`.
+2. `ClientImportView` собирает экран и подключает `ImportClients`.
+3. `ImportClients` хранит состояние выбора и проверки файла.
+4. Стили компонента лежат рядом с ним в `*.module.css`.
+
+Не создавайте пустые слои, папки и универсальные компоненты заранее.
+
+## Именование компонентов
+
+Папки с React-компонентами и файлы компонентов называются в PascalCase:
+
+```text
+views/CalendarPage/
+├── ui/
+│   ├── CalendarPage.tsx
+│   └── CalendarPage.module.css
+└── index.ts
+```
+
+Стандартные файлы Next.js сохраняют обязательные имена `page.tsx` и
+`layout.tsx`. Обычные конфиги и утилиты называются в camelCase или kebab-case
+по назначению.
+
+## Server и Client Components
+
+Страницы, layouts и views по умолчанию остаются Server Components.
+
+`"use client"` добавляется как можно ближе к интерактивности. Например,
+`WorkspaceContainer`, `WorkspaceContent` и `WorkspaceFooter` остаются
+серверными, а `WorkspaceSidebar` и `WorkspaceHeader` являются клиентскими,
+потому что используют состояние и интерактивные компоненты Ant Design.
+
+## Стили
+
+- глобальный reset находится в `app/styles/global.css`;
+- тема Ant Design находится в `shared/config/antd`;
+- стили view, widget или feature лежат рядом с компонентом в `*.module.css`;
+- глобальные переопределения классов Ant Design добавляются только при реальной
+  необходимости.
+
+## Проверки
+
+Из корня монорепозитория:
+
+```bash
+pnpm --filter web lint
+pnpm --filter web typecheck
+pnpm --filter web build
+```

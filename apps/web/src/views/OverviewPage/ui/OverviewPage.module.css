@@ -1,0 +1,41 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.title {
+  margin: 0;
+  color: #10224a;
+  font-size: 28px;
+  line-height: 36px;
+}
+
+.description {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.emptyState {
+  max-width: 640px;
+  padding: 32px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.emptyStateTitle {
+  margin: 0;
+  color: #10224a;
+  font-size: 18px;
+  line-height: 26px;
+}
+
+.emptyStateDescription {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 22px;
+}

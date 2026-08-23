@@ -1,0 +1,18 @@
+.sidebar {
+  grid-area: sidebar;
+  background: #05245e;
+}
+
+.brand {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
