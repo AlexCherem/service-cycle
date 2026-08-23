@@ -1,0 +1,10 @@
+.container {
+  display: grid;
+  min-height: 100dvh;
+  grid-template-areas:
+    'sidebar header'
+    'sidebar content'
+    'sidebar footer';
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}

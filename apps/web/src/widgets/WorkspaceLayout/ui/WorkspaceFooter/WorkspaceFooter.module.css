@@ -1,0 +1,23 @@
+.footer {
+  grid-area: footer;
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 24px;
+  border-top: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+@media (max-width: 720px) {
+  .footer {
+    align-items: flex-start;
+    padding-inline: 16px;
+    flex-direction: column;
+    gap: 2px;
+  }
+}
