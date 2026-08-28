@@ -12,6 +12,7 @@ model Company {
   id        String   @id @default(uuid()) @db.Uuid
   name      String
   clients   Client[]
+  equipment Equipment[]
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -25,9 +26,28 @@ model Client {
   phone     String?
   email     String?
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  equipment Equipment[]
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  @@index([companyId], map: "clients_company_id_idx")
+  @@unique([companyId, phone], map: "clients_company_id_phone_key")
   @@map("clients")
+}
+
+model Equipment {
+  id               String    @id @default(uuid()) @db.Uuid
+  companyId        String    @map("company_id") @db.Uuid
+  clientId         String    @map("client_id") @db.Uuid
+  name             String
+  installationDate DateTime? @map("installation_date") @db.Date
+  lastServiceDate  DateTime? @map("last_service_date") @db.Date
+  nextServiceDate  DateTime? @map("next_service_date") @db.Date
+  company          Company   @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  client           Client    @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([clientId, name], map: "equipment_client_id_name_key")
+  @@index([companyId, clientId], map: "equipment_company_id_client_id_idx")
+  @@map("equipment")
 }
