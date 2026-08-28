@@ -9,6 +9,7 @@ import { Button, message, Upload } from 'antd';
 import styles from './ImportClients.module.css';
 
 const ACCEPTED_FILE_EXTENSION = '.xlsx';
+const MAX_EXCEL_FILE_SIZE = 10 * 1024 * 1024;
 
 
 export function ImportClients() {
@@ -20,6 +21,12 @@ export function ImportClients() {
       const isExcelFile = file.name.toLowerCase().endsWith('.xlsx');
       if (!isExcelFile) {
         void message.error('Выберите Excel-файл в формате .xlsx');
+        return Upload.LIST_IGNORE;
+      }
+      const isFileSizeValid = file.size <= MAX_EXCEL_FILE_SIZE;
+
+      if (!isFileSizeValid) {
+        void message.error('Размер файла не должен превышать 10 МБ');
         return Upload.LIST_IGNORE;
       }
 
@@ -65,8 +72,16 @@ export function ImportClients() {
 
         <ul className={styles.requirementsList}>
           <li>Формат файла: .xlsx</li>
+          <li>Максимальный размер: 10 МБ</li>
           <li>Первая строка должна содержать названия колонок</li>
-          <li>Одна строка должна соответствовать одному клиенту</li>
+          <li>
+            Каждая строка должна содержать данные одного клиента и одной единицы
+            оборудования
+          </li>
+          <li>
+            Если у клиента несколько единиц оборудования, добавьте отдельную строку для
+            каждой единицы
+          </li>
         </ul>
       </div>
 
