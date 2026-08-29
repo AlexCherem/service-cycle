@@ -11,13 +11,12 @@ import styles from './ImportClients.module.css';
 const ACCEPTED_FILE_EXTENSION = '.xlsx';
 const MAX_EXCEL_FILE_SIZE = 10 * 1024 * 1024;
 
-
 export function ImportClients() {
   const [fileList, setFileList] = useState<UploadFile[]>([]);
 
   const uploadProps: UploadProps = {
     accept: ACCEPTED_FILE_EXTENSION,
-    beforeUpload: (file)=>{
+    beforeUpload: (file) => {
       const isExcelFile = file.name.toLowerCase().endsWith('.xlsx');
       if (!isExcelFile) {
         void message.error('Выберите Excel-файл в формате .xlsx');
@@ -79,8 +78,8 @@ export function ImportClients() {
             оборудования
           </li>
           <li>
-            Если у клиента несколько единиц оборудования, добавьте отдельную строку для
-            каждой единицы
+            Если у клиента несколько единиц оборудования, добавьте отдельную
+            строку для каждой единицы
           </li>
         </ul>
       </div>
