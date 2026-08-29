@@ -1,4 +1,4 @@
-import { Button } from 'antd';
+import { ButtonLink } from '@/shared/ui/ButtonLink';
 
 import styles from './ClientsPage.module.css';
 
@@ -14,9 +14,9 @@ export function ClientsPage() {
           </p>
         </div>
 
-        <Button href="/clients/import" type="primary">
+        <ButtonLink href="/clients/import" type="primary">
           Импортировать базу
-        </Button>
+        </ButtonLink>
       </header>
 
       <div className={styles.emptyState}>
@@ -27,9 +27,9 @@ export function ClientsPage() {
           работу.
         </p>
 
-        <Button href="/clients/import" type="primary">
+        <ButtonLink href="/clients/import" type="primary">
           Импортировать базу
-        </Button>
+        </ButtonLink>
       </div>
     </section>
   );
