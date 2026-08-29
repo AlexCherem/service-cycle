@@ -6,6 +6,8 @@ import { InboxOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd';
 import { Button, message, Upload } from 'antd';
 
+import { ButtonLink } from '@/shared/ui/ButtonLink';
+
 import styles from './ImportClients.module.css';
 
 const ACCEPTED_FILE_EXTENSION = '.xlsx';
@@ -85,7 +87,7 @@ export function ImportClients() {
       </div>
 
       <div className={styles.actions}>
-        <Button href="/clients">Отмена</Button>
+        <ButtonLink href="/clients">Отмена</ButtonLink>
 
         <Button
           disabled={fileList.length === 0}
