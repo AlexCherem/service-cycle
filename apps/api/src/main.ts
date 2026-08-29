@@ -7,6 +7,16 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  const webOrigin = process.env.WEB_ORIGIN;
+
+  if (!webOrigin) {
+    throw new Error('WEB_ORIGIN is not configured');
+  }
+
+  app.enableCors({
+    origin: webOrigin,
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       forbidNonWhitelisted: true,
