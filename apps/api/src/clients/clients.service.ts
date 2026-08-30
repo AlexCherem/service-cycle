@@ -1,0 +1,90 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+
+import { PrismaService } from '../database/prisma/prisma.service';
+import { ListClientsQueryDto } from './dto/list-clients-query.dto';
+import { ListClientsResponseDto } from './dto/list-clients-response.dto';
+
+const toDateOnly = (value: Date | null): string | null => {
+  return value ? value.toISOString().slice(0, 10) : null;
+};
+
+@Injectable()
+export class ClientsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async findAll(
+    companyId: string,
+    query: ListClientsQueryDto,
+  ): Promise<ListClientsResponseDto> {
+    await this.ensureCompanyExists(companyId);
+
+    const { page, limit } = query;
+    const skip = (page - 1) * limit;
+
+    const [clients, total] = await this.prisma.$transaction([
+      this.prisma.client.findMany({
+        where: {
+          companyId,
+        },
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          email: true,
+          equipment: {
+            select: {
+              id: true,
+              name: true,
+              installationDate: true,
+              lastServiceDate: true,
+              nextServiceDate: true,
+            },
+            orderBy: [{ name: 'asc' }, { id: 'asc' }],
+          },
+        },
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        skip,
+        take: limit,
+      }),
+      this.prisma.client.count({
+        where: {
+          companyId,
+        },
+      }),
+    ]);
+
+    return {
+      items: clients.map((client) => ({
+        id: client.id,
+        name: client.name,
+        phone: client.phone,
+        email: client.email,
+        equipment: client.equipment.map((item) => ({
+          id: item.id,
+          name: item.name,
+          installationDate: toDateOnly(item.installationDate),
+          lastServiceDate: toDateOnly(item.lastServiceDate),
+          nextServiceDate: toDateOnly(item.nextServiceDate),
+        })),
+      })),
+      total,
+      page,
+      limit,
+    };
+  }
+
+  private async ensureCompanyExists(companyId: string): Promise<void> {
+    const company = await this.prisma.company.findUnique({
+      where: {
+        id: companyId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!company) {
+      throw new NotFoundException('Компания не найдена');
+    }
+  }
+}
