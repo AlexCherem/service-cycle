@@ -11,12 +11,26 @@ datasource db {
 model Company {
   id        String   @id @default(uuid()) @db.Uuid
   name      String
+  users     User[]
   clients   Client[]
   equipment Equipment[]
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("companies")
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  companyId    String   @map("company_id") @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([companyId], map: "users_company_id_idx")
+  @@map("users")
 }
 
 model Client {
