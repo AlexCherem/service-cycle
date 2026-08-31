@@ -16,11 +16,23 @@ import { RegisterDto } from './dto/register.dto';
 
 const PASSWORD_HASH_ROUNDS = 12;
 const INVALID_CREDENTIALS_MESSAGE = 'Неверный email или пароль';
+const INVALID_REFRESH_TOKEN_MESSAGE = 'Сессия недействительна или истекла';
 
 type AuthResult = {
   user: AuthUserDto;
   accessToken: string;
   refreshToken: string;
+};
+
+type RefreshResult = {
+  user: AuthUserDto;
+  accessToken: string;
+};
+
+type RefreshTokenPayload = {
+  sub?: unknown;
+  sessionId?: unknown;
+  type?: unknown;
 };
 
 @Injectable()
@@ -110,6 +122,68 @@ export class AuthService {
     return this.prisma.$transaction((transaction) =>
       this.createSessionAndTokens(transaction, authUser),
     );
+  }
+
+  async refresh(refreshToken: string): Promise<RefreshResult> {
+    const refreshSecret =
+      this.configService.getOrThrow<string>('JWT_REFRESH_SECRET');
+
+    let payload: RefreshTokenPayload;
+
+    try {
+      payload = await this.jwtService.verifyAsync<RefreshTokenPayload>(
+        refreshToken,
+        {
+          secret: refreshSecret,
+        },
+      );
+    } catch {
+      throw new UnauthorizedException(INVALID_REFRESH_TOKEN_MESSAGE);
+    }
+
+    if (
+      payload.type !== 'refresh' ||
+      typeof payload.sub !== 'string' ||
+      typeof payload.sessionId !== 'string'
+    ) {
+      throw new UnauthorizedException(INVALID_REFRESH_TOKEN_MESSAGE);
+    }
+
+    const session = await this.prisma.authSession.findUnique({
+      where: {
+        id: payload.sessionId,
+      },
+      select: {
+        userId: true,
+        expiresAt: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            companyId: true,
+          },
+        },
+      },
+    });
+
+    if (
+      !session ||
+      session.userId !== payload.sub ||
+      session.expiresAt <= new Date()
+    ) {
+      throw new UnauthorizedException(INVALID_REFRESH_TOKEN_MESSAGE);
+    }
+
+    const accessToken = await this.jwtService.signAsync({
+      sub: session.user.id,
+      companyId: session.user.companyId,
+      type: 'access',
+    });
+
+    return {
+      user: session.user,
+      accessToken,
+    };
   }
 
   private async createSessionAndTokens(

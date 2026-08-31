@@ -4,7 +4,9 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Req,
   Res,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -15,7 +17,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 
 import {
   ACCESS_TOKEN_COOKIE_NAME,
@@ -86,23 +88,57 @@ export class AuthController {
     return user;
   }
 
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Обновить access token',
+  })
+  @ApiOkResponse({
+    description: 'Access token обновлён',
+    type: AuthUserDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Сессия недействительна или истекла',
+  })
+  async refresh(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<AuthUserDto> {
+    const cookies = request.cookies as Record<string, unknown>;
+    const refreshToken = cookies[REFRESH_TOKEN_COOKIE_NAME];
+
+    if (typeof refreshToken !== 'string') {
+      throw new UnauthorizedException('Сессия недействительна или истекла');
+    }
+
+    const { user, accessToken } = await this.authService.refresh(refreshToken);
+
+    this.setAccessCookie(response, accessToken);
+
+    return user;
+  }
+
   private setAuthCookies(
     response: Response,
     accessToken: string,
     refreshToken: string,
   ): void {
-    response.cookie(ACCESS_TOKEN_COOKIE_NAME, accessToken, {
-      httpOnly: true,
-      maxAge: ACCESS_TOKEN_TTL_SECONDS * 1000,
-      path: '/',
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-    });
+    this.setAccessCookie(response, accessToken);
 
     response.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
       httpOnly: true,
       maxAge: REFRESH_TOKEN_TTL_SECONDS * 1000,
       path: '/auth',
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    });
+  }
+
+  private setAccessCookie(response: Response, accessToken: string): void {
+    response.cookie(ACCESS_TOKEN_COOKIE_NAME, accessToken, {
+      httpOnly: true,
+      maxAge: ACCESS_TOKEN_TTL_SECONDS * 1000,
+      path: '/',
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
     });
