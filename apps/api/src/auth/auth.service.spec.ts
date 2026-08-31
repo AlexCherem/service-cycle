@@ -491,4 +491,50 @@ describe('AuthService', () => {
     expect(prisma.authSession.findUnique).toHaveBeenCalledTimes(1);
     expect(jwtService.signAsync).not.toHaveBeenCalled();
   });
+
+  it('returns current user by id', async () => {
+    const user = {
+      id: '744bed01-03d7-4a75-89e2-d3642b455dbf',
+      email: 'owner@example.com',
+      companyId: '9deaed53-1de4-410a-8cb3-7b3c62030699',
+    };
+
+    prisma.user.findUnique.mockResolvedValue(user);
+
+    const result = await authService.getMe(user.id);
+
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: {
+        id: user.id,
+      },
+      select: {
+        id: true,
+        email: true,
+        companyId: true,
+      },
+    });
+
+    expect(result).toEqual(user);
+  });
+
+  it('throws UnauthorizedException when current user does not exist', async () => {
+    const userId = '744bed01-03d7-4a75-89e2-d3642b455dbf';
+
+    prisma.user.findUnique.mockResolvedValue(null);
+
+    await expect(authService.getMe(userId)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: {
+        id: userId,
+      },
+      select: {
+        id: true,
+        email: true,
+        companyId: true,
+      },
+    });
+  });
 });
