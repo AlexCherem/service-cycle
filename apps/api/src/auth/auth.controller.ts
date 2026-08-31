@@ -1,12 +1,14 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
   Req,
   Res,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -19,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 
+import { AccessTokenGuard } from './access-token.guard';
 import {
   ACCESS_TOKEN_COOKIE_NAME,
   ACCESS_TOKEN_TTL_SECONDS,
@@ -26,6 +29,7 @@ import {
   REFRESH_TOKEN_TTL_SECONDS,
 } from './auth.constants';
 import { AuthService } from './auth.service';
+import type { AuthenticatedRequest } from './authenticated-user.type';
 import { AuthUserDto } from './dto/auth-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -116,6 +120,22 @@ export class AuthController {
     this.setAccessCookie(response, accessToken);
 
     return user;
+  }
+
+  @Get('me')
+  @UseGuards(AccessTokenGuard)
+  @ApiOperation({
+    summary: 'Получить текущего пользователя',
+  })
+  @ApiOkResponse({
+    description: 'Текущий пользователь',
+    type: AuthUserDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Access token отсутствует или недействителен',
+  })
+  async me(@Req() request: AuthenticatedRequest): Promise<AuthUserDto> {
+    return this.authService.getMe(request.user.userId);
   }
 
   private setAuthCookies(

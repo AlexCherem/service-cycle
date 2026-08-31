@@ -186,6 +186,25 @@ export class AuthService {
     };
   }
 
+  async getMe(userId: string): Promise<AuthUserDto> {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        id: true,
+        email: true,
+        companyId: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Пользователь больше не существует');
+    }
+
+    return user;
+  }
+
   private async createSessionAndTokens(
     transaction: Prisma.TransactionClient,
     user: AuthUserDto,
