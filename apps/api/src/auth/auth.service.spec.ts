@@ -1,6 +1,7 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type { JwtService } from '@nestjs/jwt';
+import { hash } from 'bcryptjs';
 
 import type { PrismaService } from '../database/prisma/prisma.service';
 import { Prisma } from '../generated/prisma/client';
@@ -24,6 +25,9 @@ type TransactionMock = {
 };
 
 type PrismaMock = {
+  user: {
+    findUnique: jest.Mock;
+  };
   $transaction: jest.Mock;
 };
 
@@ -52,6 +56,9 @@ describe('AuthService', () => {
     };
 
     prisma = {
+      user: {
+        findUnique: jest.fn(),
+      },
       $transaction: jest.fn(),
     };
 
@@ -226,6 +233,97 @@ describe('AuthService', () => {
       }),
     ).rejects.toBeInstanceOf(ConflictException);
 
+    expect(jwtService.signAsync).not.toHaveBeenCalled();
+  });
+
+  it('logs in user with valid credentials', async () => {
+    const password = 'secure-password1';
+
+    const user = {
+      id: '744bed01-03d7-4a75-89e2-d3642b455dbf',
+      email: 'owner@example.com',
+      companyId: '9deaed53-1de4-410a-8cb3-7b3c62030699',
+      passwordHash: await hash(password, 4),
+    };
+
+    const session = {
+      id: 'aa593f83-6336-402d-9169-dad2c9f9ed52',
+    };
+
+    prisma.user.findUnique.mockResolvedValue(user);
+    transaction.authSession.create.mockResolvedValue(session);
+
+    jwtService.signAsync
+      .mockResolvedValueOnce('access-token')
+      .mockResolvedValueOnce('refresh-token');
+
+    configService.getOrThrow.mockReturnValue('refresh-secret');
+
+    const result = await authService.login({
+      email: ' Owner@Example.com ',
+      password,
+    });
+
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: {
+        email: 'owner@example.com',
+      },
+      select: {
+        id: true,
+        email: true,
+        companyId: true,
+        passwordHash: true,
+      },
+    });
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(transaction.authSession.create).toHaveBeenCalledTimes(1);
+
+    expect(result).toEqual({
+      user: {
+        id: user.id,
+        email: user.email,
+        companyId: user.companyId,
+      },
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    });
+  });
+
+  it('throws UnauthorizedException when user does not exist', async () => {
+    prisma.user.findUnique.mockResolvedValue(null);
+
+    await expect(
+      authService.login({
+        email: 'unknown@example.com',
+        password: 'secure-password1',
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(transaction.authSession.create).not.toHaveBeenCalled();
+    expect(jwtService.signAsync).not.toHaveBeenCalled();
+  });
+
+  it('throws UnauthorizedException when password is incorrect', async () => {
+    const user = {
+      id: '744bed01-03d7-4a75-89e2-d3642b455dbf',
+      email: 'owner@example.com',
+      companyId: '9deaed53-1de4-410a-8cb3-7b3c62030699',
+      passwordHash: await hash('secure-password1', 4),
+    };
+
+    prisma.user.findUnique.mockResolvedValue(user);
+
+    await expect(
+      authService.login({
+        email: 'owner@example.com',
+        password: 'wrong-password1',
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(transaction.authSession.create).not.toHaveBeenCalled();
     expect(jwtService.signAsync).not.toHaveBeenCalled();
   });
 });
