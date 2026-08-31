@@ -1,12 +1,13 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
+  app.use(cookieParser());
   const webOrigin = process.env.WEB_ORIGIN;
 
   if (!webOrigin) {
@@ -15,6 +16,7 @@ async function bootstrap() {
 
   app.enableCors({
     origin: webOrigin,
+    credentials: true,
   });
 
   app.useGlobalPipes(
