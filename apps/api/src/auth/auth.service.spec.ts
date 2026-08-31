@@ -28,6 +28,9 @@ type PrismaMock = {
   user: {
     findUnique: jest.Mock;
   };
+  authSession: {
+    findUnique: jest.Mock;
+  };
   $transaction: jest.Mock;
 };
 
@@ -37,6 +40,7 @@ describe('AuthService', () => {
   let transaction: TransactionMock;
   let jwtService: {
     signAsync: jest.Mock;
+    verifyAsync: jest.Mock;
   };
   let configService: {
     getOrThrow: jest.Mock;
@@ -59,11 +63,15 @@ describe('AuthService', () => {
       user: {
         findUnique: jest.fn(),
       },
+      authSession: {
+        findUnique: jest.fn(),
+      },
       $transaction: jest.fn(),
     };
 
     jwtService = {
       signAsync: jest.fn(),
+      verifyAsync: jest.fn(),
     };
 
     configService = {
@@ -324,6 +332,163 @@ describe('AuthService', () => {
 
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(transaction.authSession.create).not.toHaveBeenCalled();
+    expect(jwtService.signAsync).not.toHaveBeenCalled();
+  });
+
+  it('refreshes access token for valid session', async () => {
+    const user = {
+      id: '744bed01-03d7-4a75-89e2-d3642b455dbf',
+      email: 'owner@example.com',
+      companyId: '9deaed53-1de4-410a-8cb3-7b3c62030699',
+    };
+
+    const sessionId = 'aa593f83-6336-402d-9169-dad2c9f9ed52';
+
+    configService.getOrThrow.mockReturnValue('refresh-secret');
+
+    jwtService.verifyAsync.mockResolvedValue({
+      sub: user.id,
+      sessionId,
+      type: 'refresh',
+    });
+
+    prisma.authSession.findUnique.mockResolvedValue({
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 60_000),
+      user,
+    });
+
+    jwtService.signAsync.mockResolvedValue('new-access-token');
+
+    const result = await authService.refresh('refresh-token');
+
+    expect(jwtService.verifyAsync).toHaveBeenCalledWith('refresh-token', {
+      secret: 'refresh-secret',
+    });
+
+    expect(prisma.authSession.findUnique).toHaveBeenCalledWith({
+      where: {
+        id: sessionId,
+      },
+      select: {
+        userId: true,
+        expiresAt: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            companyId: true,
+          },
+        },
+      },
+    });
+
+    expect(jwtService.signAsync).toHaveBeenCalledWith({
+      sub: user.id,
+      companyId: user.companyId,
+      type: 'access',
+    });
+
+    expect(result).toEqual({
+      user,
+      accessToken: 'new-access-token',
+    });
+  });
+
+  it('throws UnauthorizedException when refresh token is invalid', async () => {
+    configService.getOrThrow.mockReturnValue('refresh-secret');
+    jwtService.verifyAsync.mockRejectedValue(new Error('Invalid token'));
+
+    await expect(
+      authService.refresh('invalid-refresh-token'),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+
+    expect(jwtService.verifyAsync).toHaveBeenCalledWith(
+      'invalid-refresh-token',
+      {
+        secret: 'refresh-secret',
+      },
+    );
+
+    expect(prisma.authSession.findUnique).not.toHaveBeenCalled();
+    expect(jwtService.signAsync).not.toHaveBeenCalled();
+  });
+
+  it('throws UnauthorizedException when auth session has expired', async () => {
+    const user = {
+      id: '744bed01-03d7-4a75-89e2-d3642b455dbf',
+      email: 'owner@example.com',
+      companyId: '9deaed53-1de4-410a-8cb3-7b3c62030699',
+    };
+
+    const sessionId = 'aa593f83-6336-402d-9169-dad2c9f9ed52';
+
+    configService.getOrThrow.mockReturnValue('refresh-secret');
+
+    jwtService.verifyAsync.mockResolvedValue({
+      sub: user.id,
+      sessionId,
+      type: 'refresh',
+    });
+
+    prisma.authSession.findUnique.mockResolvedValue({
+      userId: user.id,
+      expiresAt: new Date(Date.now() - 60_000),
+      user,
+    });
+
+    await expect(authService.refresh('refresh-token')).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+
+    expect(prisma.authSession.findUnique).toHaveBeenCalledWith({
+      where: {
+        id: sessionId,
+      },
+      select: {
+        userId: true,
+        expiresAt: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            companyId: true,
+          },
+        },
+      },
+    });
+
+    expect(jwtService.signAsync).not.toHaveBeenCalled();
+  });
+
+  it('throws UnauthorizedException when session belongs to another user', async () => {
+    const user = {
+      id: '744bed01-03d7-4a75-89e2-d3642b455dbf',
+      email: 'owner@example.com',
+      companyId: '9deaed53-1de4-410a-8cb3-7b3c62030699',
+    };
+
+    const sessionId = 'aa593f83-6336-402d-9169-dad2c9f9ed52';
+
+    configService.getOrThrow.mockReturnValue('refresh-secret');
+
+    jwtService.verifyAsync.mockResolvedValue({
+      sub: 'another-user-id',
+      sessionId,
+      type: 'refresh',
+    });
+
+    prisma.authSession.findUnique.mockResolvedValue({
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 60_000),
+      user,
+    });
+
+    await expect(authService.refresh('refresh-token')).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+
+    expect(prisma.authSession.findUnique).toHaveBeenCalledTimes(1);
     expect(jwtService.signAsync).not.toHaveBeenCalled();
   });
 });
