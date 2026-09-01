@@ -4,6 +4,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 
 import { AppModule } from './app.module';
+import { ACCESS_TOKEN_COOKIE_NAME } from './auth/auth.constants';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -31,6 +32,13 @@ async function bootstrap() {
     .setTitle('Service Cycle API')
     .setDescription('API для управления плановым обслуживанием клиентов')
     .setVersion('1.0')
+    .addCookieAuth(
+      ACCESS_TOKEN_COOKIE_NAME,
+      {
+        type: 'apiKey',
+      },
+      ACCESS_TOKEN_COOKIE_NAME,
+    )
     .build();
   const swaggerDocument = () =>
     SwaggerModule.createDocument(app, swaggerConfig);
