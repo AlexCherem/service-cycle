@@ -2,7 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../database/prisma/prisma.service';
 import { ListClientsQueryDto } from './dto/list-clients-query.dto';
-import { ListClientsResponseDto } from './dto/list-clients-response.dto';
+import {
+  ClientListItemDto,
+  ListClientsResponseDto,
+} from './dto/list-clients-response.dto';
 
 const toDateOnly = (value: Date | null): string | null => {
   return value ? value.toISOString().slice(0, 10) : null;
@@ -11,6 +14,52 @@ const toDateOnly = (value: Date | null): string | null => {
 @Injectable()
 export class ClientsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async findOne(
+    companyId: string,
+    clientId: string,
+  ): Promise<ClientListItemDto> {
+    const client = await this.prisma.client.findFirst({
+      where: {
+        id: clientId,
+        companyId,
+      },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        email: true,
+        equipment: {
+          select: {
+            id: true,
+            name: true,
+            installationDate: true,
+            lastServiceDate: true,
+            nextServiceDate: true,
+          },
+          orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        },
+      },
+    });
+
+    if (!client) {
+      throw new NotFoundException('Клиент не найден');
+    }
+
+    return {
+      id: client.id,
+      name: client.name,
+      phone: client.phone,
+      email: client.email,
+      equipment: client.equipment.map((item) => ({
+        id: item.id,
+        name: item.name,
+        installationDate: toDateOnly(item.installationDate),
+        lastServiceDate: toDateOnly(item.lastServiceDate),
+        nextServiceDate: toDateOnly(item.nextServiceDate),
+      })),
+    };
+  }
 
   async findAll(
     companyId: string,

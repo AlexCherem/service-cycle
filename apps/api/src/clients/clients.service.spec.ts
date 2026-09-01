@@ -8,6 +8,7 @@ type PrismaMock = {
     findUnique: jest.Mock;
   };
   client: {
+    findFirst: jest.Mock;
     findMany: jest.Mock;
     count: jest.Mock;
   };
@@ -24,6 +25,7 @@ describe('ClientsService', () => {
         findUnique: jest.fn(),
       },
       client: {
+        findFirst: jest.fn(),
         findMany: jest.fn(),
         count: jest.fn(),
       },
@@ -131,6 +133,90 @@ describe('ClientsService', () => {
         page: 2,
         limit: 2,
       });
+    });
+  });
+
+  describe('findOne', () => {
+    it('returns one client with equipment from the requested company', async () => {
+      const companyId = '7cfad2ad-8c32-4614-bd68-4882d7998655';
+      const clientId = '8810c8d6-67ee-49bd-82c8-4cd4865e9ac5';
+
+      prisma.client.findFirst.mockResolvedValue({
+        id: clientId,
+        name: 'Иван Иванов',
+        phone: '+375291234567',
+        email: 'ivan@example.com',
+        equipment: [
+          {
+            id: '960ae682-3486-4fd5-8709-76b650582f84',
+            name: 'Газовый котёл BAXI',
+            installationDate: new Date('2024-02-07T00:00:00.000Z'),
+            lastServiceDate: null,
+            nextServiceDate: new Date('2027-02-07T00:00:00.000Z'),
+          },
+        ],
+      });
+
+      const result = await clientsService.findOne(companyId, clientId);
+
+      expect(prisma.client.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: clientId,
+          companyId,
+        },
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          email: true,
+          equipment: {
+            select: {
+              id: true,
+              name: true,
+              installationDate: true,
+              lastServiceDate: true,
+              nextServiceDate: true,
+            },
+            orderBy: [{ name: 'asc' }, { id: 'asc' }],
+          },
+        },
+      });
+
+      expect(result).toEqual({
+        id: clientId,
+        name: 'Иван Иванов',
+        phone: '+375291234567',
+        email: 'ivan@example.com',
+        equipment: [
+          {
+            id: '960ae682-3486-4fd5-8709-76b650582f84',
+            name: 'Газовый котёл BAXI',
+            installationDate: '2024-02-07',
+            lastServiceDate: null,
+            nextServiceDate: '2027-02-07',
+          },
+        ],
+      });
+    });
+
+    it('throws NotFoundException when client does not belong to the company', async () => {
+      const companyId = '7cfad2ad-8c32-4614-bd68-4882d7998655';
+      const clientId = '8810c8d6-67ee-49bd-82c8-4cd4865e9ac5';
+
+      prisma.client.findFirst.mockResolvedValue(null);
+
+      await expect(clientsService.findOne(companyId, clientId)).rejects.toThrow(
+        'Клиент не найден',
+      );
+
+      expect(prisma.client.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            id: clientId,
+            companyId,
+          },
+        }),
+      );
     });
   });
 });
