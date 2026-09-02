@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../database/prisma/prisma.service';
+import type { Prisma } from '../generated/prisma/client';
 import { ListClientsQueryDto } from './dto/list-clients-query.dto';
 import {
   ClientListItemDto,
@@ -67,14 +68,34 @@ export class ClientsService {
   ): Promise<ListClientsResponseDto> {
     await this.ensureCompanyExists(companyId);
 
-    const { page, limit } = query;
+    const { page, limit, search } = query;
     const skip = (page - 1) * limit;
+    const normalizedSearch = search?.trim();
+
+    const where: Prisma.ClientWhereInput = normalizedSearch
+      ? {
+          companyId,
+          OR: [
+            {
+              name: {
+                contains: normalizedSearch,
+                mode: 'insensitive',
+              },
+            },
+            {
+              phone: {
+                contains: normalizedSearch,
+              },
+            },
+          ],
+        }
+      : {
+          companyId,
+        };
 
     const [clients, total] = await this.prisma.$transaction([
       this.prisma.client.findMany({
-        where: {
-          companyId,
-        },
+        where,
         select: {
           id: true,
           name: true,
@@ -96,9 +117,7 @@ export class ClientsService {
         take: limit,
       }),
       this.prisma.client.count({
-        where: {
-          companyId,
-        },
+        where,
       }),
     ]);
 
