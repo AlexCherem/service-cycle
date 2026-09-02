@@ -134,6 +134,50 @@ describe('ClientsService', () => {
         limit: 2,
       });
     });
+
+    it('applies one search value to client name and phone', async () => {
+      const companyId = '7cfad2ad-8c32-4614-bd68-4882d7998655';
+
+      prisma.company.findUnique.mockResolvedValue({
+        id: companyId,
+      });
+      prisma.client.findMany.mockResolvedValue([]);
+      prisma.client.count.mockResolvedValue(0);
+      prisma.$transaction.mockResolvedValue([[], 0]);
+
+      await clientsService.findAll(companyId, {
+        page: 1,
+        limit: 20,
+        search: '  37529123  ',
+      });
+
+      const where = {
+        companyId,
+        OR: [
+          {
+            name: {
+              contains: '37529123',
+              mode: 'insensitive',
+            },
+          },
+          {
+            phone: {
+              contains: '37529123',
+            },
+          },
+        ],
+      };
+
+      expect(prisma.client.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where,
+        }),
+      );
+
+      expect(prisma.client.count).toHaveBeenCalledWith({
+        where,
+      });
+    });
   });
 
   describe('findOne', () => {
