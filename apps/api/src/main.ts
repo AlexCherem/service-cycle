@@ -3,11 +3,13 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 
+import { configureApiRouting } from './api-routing.config';
 import { AppModule } from './app.module';
 import { ACCESS_TOKEN_COOKIE_NAME } from './auth/auth.constants';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  configureApiRouting(app);
   app.use(cookieParser());
   const webOrigin = process.env.WEB_ORIGIN;
 
