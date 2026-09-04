@@ -7,6 +7,11 @@ import {
   ClientListItemDto,
   ListClientsResponseDto,
 } from './dto/list-clients-response.dto';
+import {
+  calculateEquipmentServiceStatus,
+  createEquipmentServiceStatusWhere,
+  getBusinessToday,
+} from './utils/calculate-equipment-service-status';
 
 const toDateOnly = (value: Date | null): string | null => {
   return value ? value.toISOString().slice(0, 10) : null;
@@ -47,6 +52,8 @@ export class ClientsService {
       throw new NotFoundException('Клиент не найден');
     }
 
+    const today = getBusinessToday();
+
     return {
       id: client.id,
       name: client.name,
@@ -58,6 +65,7 @@ export class ClientsService {
         installationDate: toDateOnly(item.installationDate),
         lastServiceDate: toDateOnly(item.lastServiceDate),
         nextServiceDate: toDateOnly(item.nextServiceDate),
+        status: calculateEquipmentServiceStatus(item.nextServiceDate, today),
       })),
     };
   }
@@ -68,30 +76,46 @@ export class ClientsService {
   ): Promise<ListClientsResponseDto> {
     await this.ensureCompanyExists(companyId);
 
-    const { page, limit, search } = query;
+    const { page, limit, search, status } = query;
     const skip = (page - 1) * limit;
     const normalizedSearch = search?.trim();
 
-    const where: Prisma.ClientWhereInput = normalizedSearch
+    const today = getBusinessToday();
+
+    const equipmentWhere: Prisma.EquipmentWhereInput | undefined = status
       ? {
           companyId,
-          OR: [
-            {
-              name: {
-                contains: normalizedSearch,
-                mode: 'insensitive',
-              },
-            },
-            {
-              phone: {
-                contains: normalizedSearch,
-              },
-            },
-          ],
+          ...createEquipmentServiceStatusWhere(status, today),
         }
-      : {
-          companyId,
-        };
+      : undefined;
+
+    const where: Prisma.ClientWhereInput = {
+      companyId,
+      ...(normalizedSearch
+        ? {
+            OR: [
+              {
+                name: {
+                  contains: normalizedSearch,
+                  mode: 'insensitive' as const,
+                },
+              },
+              {
+                phone: {
+                  contains: normalizedSearch,
+                },
+              },
+            ],
+          }
+        : {}),
+      ...(equipmentWhere
+        ? {
+            equipment: {
+              some: equipmentWhere,
+            },
+          }
+        : {}),
+    };
 
     const [clients, total] = await this.prisma.$transaction([
       this.prisma.client.findMany({
@@ -102,6 +126,11 @@ export class ClientsService {
           phone: true,
           email: true,
           equipment: {
+            ...(equipmentWhere
+              ? {
+                  where: equipmentWhere,
+                }
+              : {}),
             select: {
               id: true,
               name: true,
@@ -133,6 +162,7 @@ export class ClientsService {
           installationDate: toDateOnly(item.installationDate),
           lastServiceDate: toDateOnly(item.lastServiceDate),
           nextServiceDate: toDateOnly(item.nextServiceDate),
+          status: calculateEquipmentServiceStatus(item.nextServiceDate, today),
         })),
       })),
       total,

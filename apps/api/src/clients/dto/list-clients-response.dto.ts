@@ -1,5 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+import { EquipmentServiceStatus } from './equipment-service-status.enum';
+
 export class ClientEquipmentListItemDto {
   @ApiProperty({ format: 'uuid' })
   id!: string;
@@ -30,6 +32,13 @@ export class ClientEquipmentListItemDto {
     type: String,
   })
   nextServiceDate!: string | null;
+  @ApiProperty({
+    description: 'Вычисленный статус сервисного срока оборудования',
+    enum: EquipmentServiceStatus,
+    enumName: 'EquipmentServiceStatus',
+    example: EquipmentServiceStatus.DUE_SOON,
+  })
+  status!: EquipmentServiceStatus;
 }
 
 export class ClientListItemDto {

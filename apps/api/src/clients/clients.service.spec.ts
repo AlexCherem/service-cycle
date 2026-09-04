@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../database/prisma/prisma.service';
 import { ClientsService } from './clients.service';
+import { EquipmentServiceStatus } from './dto/equipment-service-status.enum';
 
 type PrismaMock = {
   company: {
@@ -20,6 +21,9 @@ describe('ClientsService', () => {
   let prisma: PrismaMock;
 
   beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-09-02T12:00:00.000Z'));
+
     prisma = {
       company: {
         findUnique: jest.fn(),
@@ -33,6 +37,10 @@ describe('ClientsService', () => {
     };
 
     clientsService = new ClientsService(prisma as unknown as PrismaService);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   describe('findAll', () => {
@@ -125,6 +133,7 @@ describe('ClientsService', () => {
                 installationDate: '2024-02-07',
                 lastServiceDate: null,
                 nextServiceDate: '2027-02-07',
+                status: EquipmentServiceStatus.OK,
               },
             ],
           },
@@ -166,6 +175,118 @@ describe('ClientsService', () => {
             },
           },
         ],
+      };
+
+      expect(prisma.client.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where,
+        }),
+      );
+
+      expect(prisma.client.count).toHaveBeenCalledWith({
+        where,
+      });
+    });
+
+    it('filters clients and their equipment by DUE_SOON status', async () => {
+      const companyId = '7cfad2ad-8c32-4614-bd68-4882d7998655';
+
+      prisma.company.findUnique.mockResolvedValue({
+        id: companyId,
+      });
+      prisma.client.findMany.mockResolvedValue([]);
+      prisma.client.count.mockResolvedValue(0);
+      prisma.$transaction.mockResolvedValue([[], 0]);
+
+      await clientsService.findAll(companyId, {
+        page: 1,
+        limit: 20,
+        status: EquipmentServiceStatus.DUE_SOON,
+      });
+
+      const equipmentWhere = {
+        companyId,
+        nextServiceDate: {
+          gte: new Date('2026-09-02T00:00:00.000Z'),
+          lte: new Date('2026-10-02T00:00:00.000Z'),
+        },
+      };
+
+      const clientWhere = {
+        companyId,
+        equipment: {
+          some: equipmentWhere,
+        },
+      };
+
+      expect(prisma.client.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: clientWhere,
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            email: true,
+            equipment: {
+              where: equipmentWhere,
+              select: {
+                id: true,
+                name: true,
+                installationDate: true,
+                lastServiceDate: true,
+                nextServiceDate: true,
+              },
+              orderBy: [{ name: 'asc' }, { id: 'asc' }],
+            },
+          },
+        }),
+      );
+
+      expect(prisma.client.count).toHaveBeenCalledWith({
+        where: clientWhere,
+      });
+    });
+
+    it('combines search and status filters', async () => {
+      const companyId = '7cfad2ad-8c32-4614-bd68-4882d7998655';
+
+      prisma.company.findUnique.mockResolvedValue({
+        id: companyId,
+      });
+      prisma.client.findMany.mockResolvedValue([]);
+      prisma.client.count.mockResolvedValue(0);
+      prisma.$transaction.mockResolvedValue([[], 0]);
+
+      await clientsService.findAll(companyId, {
+        page: 1,
+        limit: 20,
+        search: '  Иван  ',
+        status: EquipmentServiceStatus.UNSCHEDULED,
+      });
+
+      const equipmentWhere = {
+        companyId,
+        nextServiceDate: null,
+      };
+
+      const where = {
+        companyId,
+        OR: [
+          {
+            name: {
+              contains: 'Иван',
+              mode: 'insensitive',
+            },
+          },
+          {
+            phone: {
+              contains: 'Иван',
+            },
+          },
+        ],
+        equipment: {
+          some: equipmentWhere,
+        },
       };
 
       expect(prisma.client.findMany).toHaveBeenCalledWith(
@@ -238,6 +359,7 @@ describe('ClientsService', () => {
             installationDate: '2024-02-07',
             lastServiceDate: null,
             nextServiceDate: '2027-02-07',
+            status: EquipmentServiceStatus.OK,
           },
         ],
       });

@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsEnum,
   IsInt,
   IsOptional,
   IsString,
@@ -8,6 +9,8 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+
+import { EquipmentServiceStatus } from './equipment-service-status.enum';
 
 export class ListClientsQueryDto {
   @ApiPropertyOptional({
@@ -39,4 +42,14 @@ export class ListClientsQueryDto {
   @IsString()
   @MaxLength(120)
   search?: string;
+
+  @ApiPropertyOptional({
+    description: 'Фильтр по статусу сервисного срока оборудования',
+    enum: EquipmentServiceStatus,
+    enumName: 'EquipmentServiceStatus',
+    example: EquipmentServiceStatus.DUE_SOON,
+  })
+  @IsOptional()
+  @IsEnum(EquipmentServiceStatus)
+  status?: EquipmentServiceStatus;
 }
