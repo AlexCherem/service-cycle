@@ -11,6 +11,12 @@
   gap: 24px;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .heading {
   display: flex;
   flex-direction: column;
@@ -33,33 +39,90 @@
 
 .emptyState {
   display: flex;
-  max-width: 640px;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 32px;
+  min-height: 500px;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  background: #ffffff;
+  border-radius: 16px;
+  background-color: #ffffff;
+}
+
+.emptyStateContent {
+  display: flex;
+  width: 100%;
+  max-width: 620px;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.emptyStateIcon {
+  display: flex;
+  width: 80px;
+  height: 80px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  border-radius: 50%;
+  background-color: #eaf4ff;
+  color: #1687ff;
+  font-size: 40px;
+  line-height: 1;
+}
+
+.emptyStateEyebrow {
+  margin-bottom: 16px;
+  color: #1687ff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 20px;
+  text-transform: uppercase;
 }
 
 .emptyStateTitle {
   margin: 0;
   color: #10224a;
-  font-size: 18px;
-  line-height: 26px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 36px;
 }
 
-.emptyStateDescription {
-  max-width: 480px;
-  margin: 0;
+.emptyStateActions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.emptyStateButton {
+  min-width: 224px;
+  font-weight: 600;
+}
+
+.emptyStateHint {
+  margin: 24px 0 0;
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.tablePlaceholder {
+  min-height: 240px;
+  padding: 32px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
   color: #64748b;
-  font-size: 14px;
-  line-height: 22px;
 }
 
 @media (max-width: 720px) {
   .header {
     flex-direction: column;
   }
+  .headerActions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
 }
+
