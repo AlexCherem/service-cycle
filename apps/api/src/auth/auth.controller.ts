@@ -148,7 +148,7 @@ export class AuthController {
     response.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
       httpOnly: true,
       maxAge: REFRESH_TOKEN_TTL_SECONDS * 1000,
-      path: '/auth',
+      path: '/api/v1/auth',
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
     });
