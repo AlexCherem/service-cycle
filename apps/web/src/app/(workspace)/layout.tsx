@@ -1,18 +1,21 @@
+import { Sidebar } from '@/widgets/Sidebar';
 import {
   WorkspaceContainer,
   WorkspaceContent,
   WorkspaceFooter,
   WorkspaceHeader,
-  WorkspaceSidebar,
 } from '@/widgets/WorkspaceLayout';
+import { RequireAuth } from '@/features/auth';
 
 export default function WorkspaceRouteLayout({ children }: LayoutProps<'/'>) {
   return (
-    <WorkspaceContainer>
-      <WorkspaceSidebar />
-      <WorkspaceHeader />
-      <WorkspaceContent>{children}</WorkspaceContent>
-      <WorkspaceFooter />
-    </WorkspaceContainer>
+    <RequireAuth>
+      <WorkspaceContainer>
+        <Sidebar navigation="workspace" />
+        <WorkspaceHeader />
+        <WorkspaceContent>{children}</WorkspaceContent>
+        <WorkspaceFooter />
+      </WorkspaceContainer>
+    </RequireAuth>
   );
 }

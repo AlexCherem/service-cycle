@@ -1,0 +1,15 @@
+.state {
+  display: flex;
+  min-height: 100dvh;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+
+.stateText {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+}

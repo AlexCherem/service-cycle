@@ -1,9 +1,9 @@
 .page {
   display: flex;
-  min-height: 100vh;
+  min-height: 100%;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 40px 0;
 }
 
 .card {
@@ -32,4 +32,25 @@
   color: #64748b;
   font-size: 14px;
   line-height: 22px;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 0;
+  }
+
+  .card {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 20px 16px;
+  }
+
+  .title {
+    font-size: 24px;
+    line-height: 32px;
+  }
 }

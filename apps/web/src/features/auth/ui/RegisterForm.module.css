@@ -1,0 +1,10 @@
+.form {
+  width: 100%;
+  max-width: 640px;
+  margin: 16px 0 0;
+  text-align: left;
+}
+
+.form :global(.ant-form-item) {
+  margin-bottom: 12px;
+}
