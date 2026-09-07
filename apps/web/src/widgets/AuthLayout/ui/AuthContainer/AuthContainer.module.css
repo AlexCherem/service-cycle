@@ -1,0 +1,32 @@
+.container {
+  display: grid;
+  min-height: 100vh;
+  grid-template-areas: 'sidebar content';
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 40px;
+  padding: 24px 40px;
+  background:
+    radial-gradient(circle at 100% 0%, rgb(224 242 254 / 75%), transparent 36%),
+    #f5f7fa;
+}
+
+@media (max-width: 1120px) {
+  .container {
+    gap: 24px;
+    padding: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    gap: 12px;
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    gap: 8px;
+    padding: 8px;
+  }
+}

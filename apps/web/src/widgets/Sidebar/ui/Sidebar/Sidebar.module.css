@@ -16,3 +16,10 @@
   letter-spacing: -0.02em;
   white-space: nowrap;
 }
+
+@media (max-width: 768px) {
+  .brand {
+    min-height: 56px;
+    font-size: 16px;
+  }
+}

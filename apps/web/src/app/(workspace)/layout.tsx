@@ -1,18 +1,21 @@
+import { Sidebar } from '@/widgets/Sidebar';
 import {
   WorkspaceContainer,
   WorkspaceContent,
   WorkspaceFooter,
   WorkspaceHeader,
-  WorkspaceSidebar,
 } from '@/widgets/WorkspaceLayout';
+import { SessionGuard } from '@/features/auth';
 
 export default function WorkspaceRouteLayout({ children }: LayoutProps<'/'>) {
   return (
-    <WorkspaceContainer>
-      <WorkspaceSidebar />
-      <WorkspaceHeader />
-      <WorkspaceContent>{children}</WorkspaceContent>
-      <WorkspaceFooter />
-    </WorkspaceContainer>
+    <SessionGuard access="authenticated">
+      <WorkspaceContainer>
+        <Sidebar navigation="workspace" />
+        <WorkspaceHeader />
+        <WorkspaceContent>{children}</WorkspaceContent>
+        <WorkspaceFooter />
+      </WorkspaceContainer>
+    </SessionGuard>
   );
 }

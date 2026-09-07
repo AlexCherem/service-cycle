@@ -8,13 +8,18 @@ import {
   BellOutlined,
   DashboardOutlined,
   FileTextOutlined,
+  LoginOutlined,
+  QuestionCircleOutlined,
   SettingOutlined,
   TeamOutlined,
   ToolOutlined,
+  UserAddOutlined,
 } from '@ant-design/icons';
 import { Layout, Menu } from 'antd';
 
-import styles from './WorkspaceSidebar.module.css';
+import styles from './Sidebar.module.css';
+
+type Navigation = 'auth' | 'workspace';
 
 type NavigationItem = {
   key: string;
@@ -23,7 +28,30 @@ type NavigationItem = {
   disabled?: boolean;
 };
 
-const navigationItems: NavigationItem[] = [
+type SidebarProps = {
+  navigation: Navigation;
+};
+
+const authNavigationItems: NavigationItem[] = [
+  {
+    key: '/register',
+    icon: <UserAddOutlined />,
+    label: <Link href="/register">Регистрация</Link>,
+  },
+  {
+    key: '/login',
+    icon: <LoginOutlined />,
+    label: <Link href="/login">Вход</Link>,
+  },
+  {
+    key: '/support',
+    icon: <QuestionCircleOutlined />,
+    label: 'Поддержка',
+    disabled: true,
+  },
+];
+
+const workspaceNavigationItems: NavigationItem[] = [
   {
     key: '/',
     icon: <DashboardOutlined />,
@@ -66,36 +94,55 @@ const navigationItems: NavigationItem[] = [
   },
 ];
 
-export function WorkspaceSidebar() {
+const navigationItems: Record<Navigation, NavigationItem[]> = {
+  auth: authNavigationItems,
+  workspace: workspaceNavigationItems,
+};
+
+export function Sidebar({ navigation }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [responsiveCollapsed, setResponsiveCollapsed] = useState(false);
+  const items = navigationItems[navigation];
+  const isCollapsed = collapsed || responsiveCollapsed;
+  const brandLabel = isCollapsed ? 'SC' : 'Service Cycle';
 
   const selectedKey =
-    navigationItems.find(({ key }) =>
+    items.find(({ key }) =>
       key === '/'
         ? pathname === '/'
         : pathname === key || pathname.startsWith(`${key}/`),
-    )?.key ?? '/';
+    )?.key ?? '';
 
   return (
     <Layout.Sider
+      breakpoint="md"
       className={styles.sidebar}
-      collapsed={collapsed}
+      collapsed={isCollapsed}
       collapsedWidth={72}
       collapsible
-      onCollapse={setCollapsed}
+      onBreakpoint={setResponsiveCollapsed}
+      onCollapse={(nextCollapsed, type) => {
+        if (type === 'clickTrigger') {
+          setCollapsed(nextCollapsed);
+        }
+      }}
       theme="dark"
       width={240}
     >
-      <Link className={styles.brand} href="/">
-        {collapsed ? 'SC' : 'Service Cycle'}
-      </Link>
+      {navigation === 'workspace' ? (
+        <Link className={styles.brand} href="/">
+          {brandLabel}
+        </Link>
+      ) : (
+        <span className={styles.brand}>{brandLabel}</span>
+      )}
 
       <nav aria-label="Основная навигация">
         <Menu
-          items={navigationItems}
+          items={items}
           mode="inline"
-          selectedKeys={[selectedKey]}
+          selectedKeys={selectedKey ? [selectedKey] : []}
           theme="dark"
         />
       </nav>
