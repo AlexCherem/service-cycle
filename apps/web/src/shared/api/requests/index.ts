@@ -1,1 +1,1 @@
-export { getCurrentUser, login } from './auth';
+export { getCurrentUser, login, register } from './auth';

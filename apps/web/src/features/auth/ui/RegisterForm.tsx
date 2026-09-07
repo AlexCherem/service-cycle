@@ -1,7 +1,10 @@
 'use client';
 
-import { Button, Checkbox, Form, Input } from 'antd';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Alert, Button, Checkbox, Form, Input } from 'antd';
 
+import { currentUserQueryKey } from '@/entities/session';
+import { ApiError, register } from '@/shared/api';
 import type { RegisterDto } from '@/shared/api/generated/models';
 
 import styles from './RegisterForm.module.css';
@@ -11,9 +14,34 @@ type RegisterFormValues = RegisterDto & {
   acceptedTerms: boolean;
 };
 
-export function RegisterForm() {
+type RegisterFormProps = {
+  onSuccessAction: () => void;
+};
+
+export function RegisterForm({ onSuccessAction }: RegisterFormProps) {
   const [form] = Form.useForm<RegisterFormValues>();
   const acceptedTerms = Form.useWatch('acceptedTerms', form);
+  const queryClient = useQueryClient();
+  const registerMutation = useMutation({
+    mutationFn: register,
+    onSuccess: (user) => {
+      queryClient.setQueryData(currentUserQueryKey, user);
+      onSuccessAction();
+    },
+  });
+  const errorMessage =
+    registerMutation.error instanceof ApiError &&
+    registerMutation.error.status === 409
+      ? 'Пользователь с таким email уже зарегистрирован.'
+      : 'Не удалось создать компанию. Проверьте данные и попробуйте ещё раз.';
+
+  const handleFinish = (values: RegisterFormValues) => {
+    registerMutation.mutate({
+      companyName: values.companyName,
+      email: values.email,
+      password: values.password,
+    });
+  };
 
   return (
     <Form<RegisterFormValues>
@@ -21,9 +49,24 @@ export function RegisterForm() {
       form={form}
       layout="vertical"
       name="register"
+      onFinish={handleFinish}
+      onValuesChange={() => {
+        if (registerMutation.isError) {
+          registerMutation.reset();
+        }
+      }}
       requiredMark={false}
       scrollToFirstError
     >
+      {registerMutation.isError && (
+        <Alert
+          className={styles.alert}
+          message={errorMessage}
+          showIcon
+          type="error"
+        />
+      )}
+
       <Form.Item<RegisterFormValues>
         label="Название компании"
         name="companyName"
@@ -123,6 +166,7 @@ export function RegisterForm() {
         block
         disabled={!acceptedTerms}
         htmlType="submit"
+        loading={registerMutation.isPending}
         size="large"
         type="primary"
       >

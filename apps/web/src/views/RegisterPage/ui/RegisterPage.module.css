@@ -1,5 +1,6 @@
 .page {
   display: grid;
+  min-height: 100%;
   grid-template-columns: minmax(620px, 1fr) minmax(300px, 340px);
   gap: 40px;
 }
@@ -12,9 +13,19 @@
 }
 
 .content {
-  align-self: start;
+  align-self: stretch;
   padding: 24px 48px 16px;
   background: #ffffff;
+}
+
+.registrationFlow {
+  min-height: 100%;
+}
+
+.registrationFlowDone {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .contentHeader {
@@ -81,11 +92,21 @@
   color: #1677ff;
 }
 
+.steps .stepCompleted {
+  color: #1677ff;
+}
+
 .stepActive .stepNumber {
   border-color: #1677ff;
   background: #1677ff;
   box-shadow: 0 6px 14px rgb(22 119 255 / 22%);
   color: #ffffff;
+}
+
+.stepCompleted .stepNumber {
+  border-color: #91caff;
+  background: #eaf3ff;
+  color: #1677ff;
 }
 
 .formSection {
@@ -113,6 +134,52 @@
   color: #64748b;
   font-size: 14px;
   line-height: 22px;
+}
+
+.doneSection {
+  min-height: 260px;
+  justify-content: center;
+  padding: 32px 24px;
+}
+
+.successIcon {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  margin-bottom: 16px;
+  border-radius: 50%;
+  background: #e8f8ef;
+  color: #22a06b;
+  font-size: 34px;
+}
+
+.doneDescription {
+  max-width: 480px;
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.importRequirements {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.importRequirements :global(.anticon) {
+  color: #22a06b;
+  font-size: 16px;
+}
+
+.doneAction {
+  min-width: 280px;
+  margin-top: 20px;
 }
 
 .hints {
@@ -206,6 +273,11 @@
     padding: 16px;
   }
 
+  .doneSection {
+    min-height: 240px;
+    padding: 28px 16px;
+  }
+
   .hints {
     padding: 20px;
   }
@@ -223,6 +295,11 @@
 
   .formSection {
     padding: 14px 10px;
+  }
+
+  .doneAction {
+    width: 100%;
+    min-width: 0;
   }
 
   .hints {

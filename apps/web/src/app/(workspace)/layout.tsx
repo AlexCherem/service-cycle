@@ -5,17 +5,17 @@ import {
   WorkspaceFooter,
   WorkspaceHeader,
 } from '@/widgets/WorkspaceLayout';
-import { RequireAuth } from '@/features/auth';
+import { SessionGuard } from '@/features/auth';
 
 export default function WorkspaceRouteLayout({ children }: LayoutProps<'/'>) {
   return (
-    <RequireAuth>
+    <SessionGuard access="authenticated">
       <WorkspaceContainer>
         <Sidebar navigation="workspace" />
         <WorkspaceHeader />
         <WorkspaceContent>{children}</WorkspaceContent>
         <WorkspaceFooter />
       </WorkspaceContainer>
-    </RequireAuth>
+    </SessionGuard>
   );
 }

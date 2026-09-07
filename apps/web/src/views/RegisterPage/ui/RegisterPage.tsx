@@ -1,9 +1,8 @@
-import { RegisterForm } from '@/features/auth';
-
 import {
   OnboardingHintIcon,
   type OnboardingHintIconName,
 } from './OnboardingHintIcon';
+import { RegistrationFlow } from './RegistrationFlow';
 
 import styles from './RegisterPage.module.css';
 
@@ -33,33 +32,7 @@ export function RegisterPage() {
   return (
     <main className={styles.page}>
       <section className={styles.content}>
-        <div className={styles.contentHeader}>
-          <h1 className={styles.title}>Создайте компанию</h1>
-          <p className={styles.description}>
-            Заполните основные данные — после регистрации вы сразу сможете
-            приступить к работе.
-          </p>
-        </div>
-
-        <ol aria-label="Этапы регистрации" className={styles.steps}>
-          <li aria-current="step" className={styles.stepActive}>
-            <span className={styles.stepNumber}>1</span>
-            <span>Компания</span>
-          </li>
-          <li>
-            <span className={styles.stepNumber}>2</span>
-            <span>Готово</span>
-          </li>
-        </ol>
-
-        <div className={styles.formSection}>
-          <h2 className={styles.formTitle}>Данные компании и владельца</h2>
-          <p className={styles.formDescription}>
-            Эти данные понадобятся для создания вашего рабочего пространства.
-          </p>
-
-          <RegisterForm />
-        </div>
+        <RegistrationFlow />
       </section>
 
       <aside className={styles.hints}>

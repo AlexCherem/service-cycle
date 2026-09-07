@@ -8,3 +8,7 @@
 .form :global(.ant-form-item) {
   margin-bottom: 12px;
 }
+
+.alert {
+  margin-bottom: 16px;
+}
