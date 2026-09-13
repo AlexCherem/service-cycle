@@ -18,6 +18,48 @@ export class ImportDetectedColumnsDto {
   equipment!: string;
 
   @ApiProperty({
+    example: 'Тип оборудования',
+    nullable: true,
+    type: String,
+  })
+  type!: string | null;
+
+  @ApiProperty({
+    example: 'Производитель',
+    nullable: true,
+    type: String,
+  })
+  manufacturer!: string | null;
+
+  @ApiProperty({
+    example: 'Модель',
+    nullable: true,
+    type: String,
+  })
+  model!: string | null;
+
+  @ApiProperty({
+    example: 'Серийный номер',
+    nullable: true,
+    type: String,
+  })
+  serialNumber!: string | null;
+
+  @ApiProperty({
+    example: 'Интервал обслуживания (мес.)',
+    nullable: true,
+    type: String,
+  })
+  serviceIntervalMonths!: string | null;
+
+  @ApiProperty({
+    example: 'Примечание к оборудованию',
+    nullable: true,
+    type: String,
+  })
+  notes!: string | null;
+
+  @ApiProperty({
     example: 'Дата установки',
     nullable: true,
     type: String,
@@ -55,6 +97,49 @@ export class ImportClientDataDto {
 
   @ApiProperty({ example: 'Газовый котёл' })
   equipment!: string;
+
+  @ApiProperty({
+    example: 'Газовый котёл',
+    nullable: true,
+    type: String,
+  })
+  type!: string | null;
+
+  @ApiProperty({
+    example: 'Vaillant',
+    nullable: true,
+    type: String,
+  })
+  manufacturer!: string | null;
+
+  @ApiProperty({
+    example: 'ecoTEC plus',
+    nullable: true,
+    type: String,
+  })
+  model!: string | null;
+
+  @ApiProperty({
+    example: 'SN-123456',
+    nullable: true,
+    type: String,
+  })
+  serialNumber!: string | null;
+
+  @ApiProperty({
+    example: 12,
+    minimum: 1,
+    nullable: true,
+    type: Number,
+  })
+  serviceIntervalMonths!: number | null;
+
+  @ApiProperty({
+    example: 'Установлен в подвальном помещении',
+    nullable: true,
+    type: String,
+  })
+  notes!: string | null;
 
   @ApiProperty({
     example: '2025-05-10',
@@ -128,13 +213,19 @@ export class ImportPreviewDto {
 
   @ApiProperty({
     example: [
-      'ФИО',
+      'Клиент',
       'Телефон',
       'Email',
       'Оборудование',
+      'Тип оборудования',
+      'Производитель',
+      'Модель',
+      'Серийный номер',
       'Дата установки',
+      'Интервал обслуживания (мес.)',
       'Дата последнего обслуживания',
       'Дата следующего обслуживания',
+      'Примечание к оборудованию',
     ],
     type: [String],
   })

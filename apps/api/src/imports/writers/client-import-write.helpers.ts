@@ -8,6 +8,12 @@ export type ClientWriteData = Pick<
 export type EquipmentWriteData = {
   clientId: string;
   name: string;
+  type: string | null;
+  manufacturer: string | null;
+  model: string | null;
+  serialNumber: string | null;
+  serviceIntervalMonths: number | null;
+  notes: string | null;
   installationDate: string | null;
   lastServiceDate: string | null;
   nextServiceDate: string | null;
@@ -53,6 +59,17 @@ export const collectEquipment = (
 
     equipmentByKey.set(equipmentKey, {
       clientId,
+      type: row.data.type ?? existingEquipment?.type ?? null,
+      manufacturer:
+        row.data.manufacturer ?? existingEquipment?.manufacturer ?? null,
+      model: row.data.model ?? existingEquipment?.model ?? null,
+      serialNumber:
+        row.data.serialNumber ?? existingEquipment?.serialNumber ?? null,
+      serviceIntervalMonths:
+        row.data.serviceIntervalMonths ??
+        existingEquipment?.serviceIntervalMonths ??
+        null,
+      notes: row.data.notes ?? existingEquipment?.notes ?? null,
       name: row.data.equipment,
       installationDate:
         row.data.installationDate ??

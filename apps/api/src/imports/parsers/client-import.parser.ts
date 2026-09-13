@@ -3,6 +3,39 @@ import ExcelJS from 'exceljs';
 
 import { normalizeBelarusPhone, parseExcelDate } from './import-value.parsers';
 
+const readCellText = (cell: ExcelJS.Cell): string => {
+  const text: unknown = cell.text;
+
+  if (typeof text === 'string') {
+    return text.trim();
+  }
+
+  if (
+    typeof text === 'object' &&
+    text !== null &&
+    'richText' in text &&
+    Array.isArray(text.richText)
+  ) {
+    return text.richText
+      .map((part: unknown) => {
+        if (
+          typeof part === 'object' &&
+          part !== null &&
+          'text' in part &&
+          typeof part.text === 'string'
+        ) {
+          return part.text;
+        }
+
+        return '';
+      })
+      .join('')
+      .trim();
+  }
+
+  return '';
+};
+
 @Injectable()
 export class ClientImportParser {
   async parse(fileBuffer: Buffer) {
@@ -31,7 +64,7 @@ export class ClientImportParser {
 
     const headers = Array.from(
       { length: worksheet.actualColumnCount },
-      (_, index) => headerRow.getCell(index + 1).text.trim(),
+      (_, index) => readCellText(headerRow.getCell(index + 1)),
     );
 
     const normalizedHeaders = headers.map((header) =>
@@ -73,6 +106,29 @@ export class ClientImportParser {
         'техника',
         'устройство',
         'аппарат',
+      ]),
+      type: findHeader([
+        'тип оборудования',
+        'тип техники',
+        'категория оборудования',
+      ]),
+      manufacturer: findHeader(['производитель', 'бренд', 'марка']),
+      model: findHeader(['модель', 'модель оборудования']),
+      serialNumber: findHeader([
+        'серийный номер',
+        'серийный номер оборудования',
+        'заводской номер',
+      ]),
+      serviceIntervalMonths: findHeader([
+        'интервал обслуживания (мес)',
+        'интервал обслуживания месяцев',
+        'периодичность обслуживания',
+      ]),
+      notes: findHeader([
+        'примечание к оборудованию',
+        'примечание',
+        'комментарий',
+        'заметка',
       ]),
       installationDate: findHeader([
         'дата установки',
@@ -120,6 +176,25 @@ export class ClientImportParser {
     const nameColumnNumber = headers.indexOf(nameHeader) + 1;
     const phoneColumnNumber = headers.indexOf(phoneHeader) + 1;
     const equipmentColumnNumber = headers.indexOf(equipmentHeader) + 1;
+    const typeColumnNumber = detectedColumns.type
+      ? headers.indexOf(detectedColumns.type) + 1
+      : null;
+    const manufacturerColumnNumber = detectedColumns.manufacturer
+      ? headers.indexOf(detectedColumns.manufacturer) + 1
+      : null;
+    const modelColumnNumber = detectedColumns.model
+      ? headers.indexOf(detectedColumns.model) + 1
+      : null;
+    const serialNumberColumnNumber = detectedColumns.serialNumber
+      ? headers.indexOf(detectedColumns.serialNumber) + 1
+      : null;
+    const serviceIntervalMonthsColumnNumber =
+      detectedColumns.serviceIntervalMonths
+        ? headers.indexOf(detectedColumns.serviceIntervalMonths) + 1
+        : null;
+    const notesColumnNumber = detectedColumns.notes
+      ? headers.indexOf(detectedColumns.notes) + 1
+      : null;
     const installationDateColumnNumber = detectedColumns.installationDate
       ? headers.indexOf(detectedColumns.installationDate) + 1
       : null;
@@ -139,12 +214,43 @@ export class ClientImportParser {
       const rowNumber = rowIndex + 2;
       const row = worksheet.getRow(rowNumber);
 
-      const name = row.getCell(nameColumnNumber).text.trim();
-      const phone = row.getCell(phoneColumnNumber).text.trim();
-      const equipment = row.getCell(equipmentColumnNumber).text.trim();
+      const name = readCellText(row.getCell(nameColumnNumber));
+      const phone = readCellText(row.getCell(phoneColumnNumber));
+      const equipment = readCellText(row.getCell(equipmentColumnNumber));
+      const type = typeColumnNumber
+        ? readCellText(row.getCell(typeColumnNumber))
+        : '';
+      const manufacturer = manufacturerColumnNumber
+        ? readCellText(row.getCell(manufacturerColumnNumber))
+        : '';
+      const model = modelColumnNumber
+        ? readCellText(row.getCell(modelColumnNumber))
+        : '';
+      const serialNumber = serialNumberColumnNumber
+        ? readCellText(row.getCell(serialNumberColumnNumber))
+        : '';
+      const notes = notesColumnNumber
+        ? readCellText(row.getCell(notesColumnNumber))
+        : '';
+
+      const serviceIntervalText = serviceIntervalMonthsColumnNumber
+        ? readCellText(row.getCell(serviceIntervalMonthsColumnNumber))
+        : '';
+
+      const parsedServiceIntervalMonths = Number(serviceIntervalText);
+
+      const isServiceIntervalInvalid =
+        serviceIntervalText !== '' &&
+        (!Number.isInteger(parsedServiceIntervalMonths) ||
+          parsedServiceIntervalMonths <= 0);
+
+      const serviceIntervalMonths =
+        serviceIntervalText !== '' && !isServiceIntervalInvalid
+          ? parsedServiceIntervalMonths
+          : null;
       const normalizedPhone = normalizeBelarusPhone(phone);
       const email = emailColumnNumber
-        ? row.getCell(emailColumnNumber).text.trim()
+        ? readCellText(row.getCell(emailColumnNumber))
         : '';
       const installationDate = parseExcelDate(
         installationDateColumnNumber
@@ -181,6 +287,10 @@ export class ClientImportParser {
 
       if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         errors.push('Email имеет неверный формат');
+      }
+
+      if (isServiceIntervalInvalid) {
+        errors.push('Интервал обслуживания должен быть целым числом больше 0');
       }
 
       if (installationDate.isInvalid) {
@@ -240,6 +350,12 @@ export class ClientImportParser {
           phone: normalizedPhone ?? phone,
           email: email || null,
           equipment,
+          type: type || null,
+          manufacturer: manufacturer || null,
+          model: model || null,
+          serialNumber: serialNumber || null,
+          serviceIntervalMonths,
+          notes: notes || null,
           installationDate: installationDate.value,
           lastServiceDate: lastServiceDate.value,
           nextServiceDate: nextServiceDate.value,
