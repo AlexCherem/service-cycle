@@ -123,6 +123,22 @@ describe('ClientImportParser', () => {
     expect(result.rows[0]?.data.email).toBe('ivan@example.com');
   });
 
+  it('skips a blank row before client data', async () => {
+    const fileBuffer = await createWorkbookBuffer([
+      ['Клиент', 'Телефон', 'Оборудование'],
+      [],
+      ['Иван Иванов', '+375291234567', 'Газовый котёл'],
+    ]);
+
+    const result = await parser.parse(fileBuffer);
+
+    expect(result.validRowCount).toBe(1);
+    expect(result.invalidRowCount).toBe(0);
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]?.rowNumber).toBe(3);
+    expect(result.rows[0]?.data.name).toBe('Иван Иванов');
+  });
+
   it('parses optional equipment details', async () => {
     const fileBuffer = await createWorkbookBuffer([
       [

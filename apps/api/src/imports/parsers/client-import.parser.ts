@@ -208,12 +208,21 @@ export class ClientImportParser {
       ? headers.indexOf(emailHeader) + 1
       : null;
 
-    const dataRowCount = worksheet.actualRowCount - 1;
+    const dataRows: Array<{
+      row: ExcelJS.Row;
+      rowNumber: number;
+    }> = [];
 
-    const rows = Array.from({ length: dataRowCount }, (_, rowIndex) => {
-      const rowNumber = rowIndex + 2;
-      const row = worksheet.getRow(rowNumber);
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      if (rowNumber > 1) {
+        dataRows.push({
+          row,
+          rowNumber,
+        });
+      }
+    });
 
+    const rows = dataRows.map(({ row, rowNumber }) => {
       const name = readCellText(row.getCell(nameColumnNumber));
       const phone = readCellText(row.getCell(phoneColumnNumber));
       const equipment = readCellText(row.getCell(equipmentColumnNumber));
