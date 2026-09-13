@@ -7,7 +7,7 @@
  */
 import type { EquipmentServiceStatus } from '../equipmentServiceStatus';
 
-export type ClientsControllerFindAllV1Params = {
+export type EquipmentControllerFindAllV1Params = {
   /**
    * @minimum 1
    */
@@ -18,12 +18,16 @@ export type ClientsControllerFindAllV1Params = {
    */
   limit?: number;
   /**
-   * Поиск клиента по имени или телефону
+   * Поиск по названию оборудования или имени клиента
    * @maxLength 120
    */
   search?: string;
   /**
-   * Фильтр по статусу сервисного срока оборудования
+   * Фильтр по сервисному статусу оборудования
    */
   status?: EquipmentServiceStatus;
+  /**
+   * Фильтр по клиенту
+   */
+  clientId?: string;
 };

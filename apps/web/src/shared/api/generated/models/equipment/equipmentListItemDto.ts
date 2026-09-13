@@ -6,10 +6,12 @@
  * OpenAPI spec version: 1.0
  */
 import type { EquipmentServiceStatus } from '../equipmentServiceStatus';
+import type { EquipmentClientDto } from './equipmentClientDto';
 
-export interface ClientEquipmentListItemDto {
+export interface EquipmentListItemDto {
   id: string;
   name: string;
+  client: EquipmentClientDto;
   /** @nullable */
   installationDate: string | null;
   /** @nullable */
