@@ -6,7 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 
-export * from './clientEquipmentListItemDto';
-export * from './clientListItemDto';
-export * from './clientsControllerFindAllV1Params';
-export * from './listClientsResponseDto';
+export interface EquipmentClientDto {
+  id: string;
+  name: string;
+}

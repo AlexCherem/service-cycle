@@ -1,17 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../database/prisma/prisma.service';
+import {
+  calculateEquipmentServiceStatus,
+  createEquipmentServiceStatusWhere,
+  getBusinessToday,
+} from '../equipment/utils/calculate-equipment-service-status';
 import type { Prisma } from '../generated/prisma/client';
 import { ListClientsQueryDto } from './dto/list-clients-query.dto';
 import {
   ClientListItemDto,
   ListClientsResponseDto,
 } from './dto/list-clients-response.dto';
-import {
-  calculateEquipmentServiceStatus,
-  createEquipmentServiceStatusWhere,
-  getBusinessToday,
-} from './utils/calculate-equipment-service-status';
 
 const toDateOnly = (value: Date | null): string | null => {
   return value ? value.toISOString().slice(0, 10) : null;

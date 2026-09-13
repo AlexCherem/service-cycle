@@ -5,14 +5,15 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   MaxLength,
   Min,
 } from 'class-validator';
 
-import { EquipmentServiceStatus } from '../../equipment/dto/equipment-service-status.enum';
+import { EquipmentServiceStatus } from './equipment-service-status.enum';
 
-export class ListClientsQueryDto {
+export class ListEquipmentQueryDto {
   @ApiPropertyOptional({
     default: 1,
     minimum: 1,
@@ -34,8 +35,8 @@ export class ListClientsQueryDto {
   limit: number = 20;
 
   @ApiPropertyOptional({
-    description: 'Поиск клиента по имени или телефону',
-    example: 'Иван',
+    description: 'Поиск по названию оборудования или имени клиента',
+    example: 'котёл',
     maxLength: 120,
   })
   @IsOptional()
@@ -44,7 +45,7 @@ export class ListClientsQueryDto {
   search?: string;
 
   @ApiPropertyOptional({
-    description: 'Фильтр по статусу сервисного срока оборудования',
+    description: 'Фильтр по сервисному статусу оборудования',
     enum: EquipmentServiceStatus,
     enumName: 'EquipmentServiceStatus',
     example: EquipmentServiceStatus.DUE_SOON,
@@ -52,4 +53,12 @@ export class ListClientsQueryDto {
   @IsOptional()
   @IsEnum(EquipmentServiceStatus)
   status?: EquipmentServiceStatus;
+
+  @ApiPropertyOptional({
+    description: 'Фильтр по клиенту',
+    format: 'uuid',
+  })
+  @IsOptional()
+  @IsUUID()
+  clientId?: string;
 }

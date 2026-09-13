@@ -10,3 +10,5 @@ export * from './auth';
 export * from './client-imports';
 export * from './clients';
 export * from './companies';
+export * from './equipment';
+export * from './equipmentServiceStatus';

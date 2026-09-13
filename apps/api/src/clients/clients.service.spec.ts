@@ -1,8 +1,8 @@
 import { NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../database/prisma/prisma.service';
+import { EquipmentServiceStatus } from '../equipment/dto/equipment-service-status.enum';
 import { ClientsService } from './clients.service';
-import { EquipmentServiceStatus } from './dto/equipment-service-status.enum';
 
 type PrismaMock = {
   company: {

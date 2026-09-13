@@ -28,6 +28,7 @@ const getDueSoonUntil = (today: Date): Date => {
   return dueSoonUntil;
 };
 
+// отбирает нужные записи в PostgreSQL
 export const createEquipmentServiceStatusWhere = (
   status: EquipmentServiceStatus,
   today: Date,
@@ -64,6 +65,7 @@ export const createEquipmentServiceStatusWhere = (
   }
 };
 
+//вычисляет статус конкретной найденной записи
 export const calculateEquipmentServiceStatus = (
   nextServiceDate: Date | null,
   today: Date,

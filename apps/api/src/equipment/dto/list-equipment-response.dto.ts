@@ -1,13 +1,24 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { EquipmentServiceStatus } from '../../equipment/dto/equipment-service-status.enum';
+import { EquipmentServiceStatus } from './equipment-service-status.enum';
 
-export class ClientEquipmentListItemDto {
+export class EquipmentClientDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ example: 'Иван Иванов' })
+  name!: string;
+}
+
+export class EquipmentListItemDto {
   @ApiProperty({ format: 'uuid' })
   id!: string;
 
   @ApiProperty({ example: 'Газовый котёл' })
   name!: string;
+
+  @ApiProperty({ type: () => EquipmentClientDto })
+  client!: EquipmentClientDto;
 
   @ApiProperty({
     example: '2025-05-10',
@@ -32,6 +43,7 @@ export class ClientEquipmentListItemDto {
     type: String,
   })
   nextServiceDate!: string | null;
+
   @ApiProperty({
     description: 'Вычисленный статус сервисного срока оборудования',
     enum: EquipmentServiceStatus,
@@ -41,34 +53,9 @@ export class ClientEquipmentListItemDto {
   status!: EquipmentServiceStatus;
 }
 
-export class ClientListItemDto {
-  @ApiProperty({ format: 'uuid' })
-  id!: string;
-
-  @ApiProperty({ example: 'Иван Иванов' })
-  name!: string;
-
-  @ApiProperty({
-    example: '+375291234567',
-    nullable: true,
-    type: String,
-  })
-  phone!: string | null;
-
-  @ApiProperty({
-    example: 'ivan@example.com',
-    nullable: true,
-    type: String,
-  })
-  email!: string | null;
-
-  @ApiProperty({ type: () => [ClientEquipmentListItemDto] })
-  equipment!: ClientEquipmentListItemDto[];
-}
-
-export class ListClientsResponseDto {
-  @ApiProperty({ type: () => [ClientListItemDto] })
-  items!: ClientListItemDto[];
+export class ListEquipmentResponseDto {
+  @ApiProperty({ type: () => [EquipmentListItemDto] })
+  items!: EquipmentListItemDto[];
 
   @ApiProperty({
     example: 125,
