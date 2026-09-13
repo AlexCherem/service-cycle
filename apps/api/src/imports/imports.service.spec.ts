@@ -51,6 +51,55 @@ describe('ImportsService', () => {
     );
   });
 
+  describe('createTemplate', () => {
+    it('throws NotFoundException when company does not exist', async () => {
+      const companyId = '7cfad2ad-8c32-4614-bd68-4882d7998655';
+
+      prisma.company.findUnique.mockResolvedValue(null);
+
+      await expect(
+        importsService.createTemplate(companyId),
+      ).rejects.toBeInstanceOf(NotFoundException);
+
+      expect(prisma.company.findUnique).toHaveBeenCalledWith({
+        where: {
+          id: companyId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      expect(clientImportParser.parse).not.toHaveBeenCalled();
+      expect(clientImportWriter.write).not.toHaveBeenCalled();
+    });
+
+    it('returns Excel template when company exists', async () => {
+      const companyId = '7cfad2ad-8c32-4614-bd68-4882d7998655';
+
+      prisma.company.findUnique.mockResolvedValue({
+        id: companyId,
+      });
+
+      const result = await importsService.createTemplate(companyId);
+
+      expect(Buffer.isBuffer(result)).toBe(true);
+      expect(result.length).toBeGreaterThan(0);
+
+      expect(prisma.company.findUnique).toHaveBeenCalledWith({
+        where: {
+          id: companyId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      expect(clientImportParser.parse).not.toHaveBeenCalled();
+      expect(clientImportWriter.write).not.toHaveBeenCalled();
+    });
+  });
+
   describe('preview', () => {
     it('throws NotFoundException when company does not exist', async () => {
       const companyId = '7cfad2ad-8c32-4614-bd68-4882d7998655';

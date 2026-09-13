@@ -65,6 +65,12 @@ describe('ClientImportParser', () => {
         phone: 'Телефон',
         email: 'Email',
         equipment: 'Оборудование',
+        type: null,
+        manufacturer: null,
+        model: null,
+        serialNumber: null,
+        serviceIntervalMonths: null,
+        notes: null,
         installationDate: 'Дата установки',
         lastServiceDate: 'Дата последнего обслуживания',
         nextServiceDate: 'Дата следующего обслуживания',
@@ -79,6 +85,12 @@ describe('ClientImportParser', () => {
             phone: '+375291234567',
             email: 'ivan@example.com',
             equipment: 'Газовый котёл',
+            type: null,
+            manufacturer: null,
+            model: null,
+            serialNumber: null,
+            serviceIntervalMonths: null,
+            notes: null,
             installationDate: '2024-02-01',
             lastServiceDate: '2025-02-01',
             nextServiceDate: '2026-02-01',
@@ -90,6 +102,98 @@ describe('ClientImportParser', () => {
       ],
     });
   });
+
+  it('parses an email stored by Numbers as a rich-text hyperlink', async () => {
+    const numbersEmail = {
+      text: {
+        richText: [{ text: 'ivan@example.com' }],
+      },
+      hyperlink: 'mailto:ivan@example.com',
+    } as unknown as CellValue;
+
+    const fileBuffer = await createWorkbookBuffer([
+      ['Клиент', 'Телефон', 'Email', 'Оборудование'],
+      ['Иван Иванов', '+375291234567', numbersEmail, 'Газовый котёл'],
+    ]);
+
+    const result = await parser.parse(fileBuffer);
+
+    expect(result.validRowCount).toBe(1);
+    expect(result.invalidRowCount).toBe(0);
+    expect(result.rows[0]?.data.email).toBe('ivan@example.com');
+  });
+
+  it('parses optional equipment details', async () => {
+    const fileBuffer = await createWorkbookBuffer([
+      [
+        'Клиент',
+        'Телефон',
+        'Оборудование',
+        'Тип оборудования',
+        'Производитель',
+        'Модель',
+        'Серийный номер',
+        'Интервал обслуживания (мес.)',
+        'Примечание к оборудованию',
+      ],
+      [
+        'Иван Иванов',
+        '+375291234567',
+        'Котёл в частном доме',
+        'Газовый котёл',
+        'Vaillant',
+        'ecoTEC plus',
+        'SN-123456',
+        12,
+        'Установлен в подвальном помещении',
+      ],
+    ]);
+
+    const result = await parser.parse(fileBuffer);
+
+    expect(result.detectedColumns).toEqual(
+      expect.objectContaining({
+        type: 'Тип оборудования',
+        manufacturer: 'Производитель',
+        model: 'Модель',
+        serialNumber: 'Серийный номер',
+        serviceIntervalMonths: 'Интервал обслуживания (мес.)',
+        notes: 'Примечание к оборудованию',
+      }),
+    );
+
+    expect(result.rows[0]?.data).toEqual(
+      expect.objectContaining({
+        equipment: 'Котёл в частном доме',
+        type: 'Газовый котёл',
+        manufacturer: 'Vaillant',
+        model: 'ecoTEC plus',
+        serialNumber: 'SN-123456',
+        serviceIntervalMonths: 12,
+        notes: 'Установлен в подвальном помещении',
+      }),
+    );
+
+    expect(result.rows[0]?.isValid).toBe(true);
+  });
+
+  it.each([0, -12, 1.5, 'каждый год'])(
+    'marks row invalid when service interval is %s',
+    async (serviceInterval) => {
+      const fileBuffer = await createWorkbookBuffer([
+        ['Клиент', 'Телефон', 'Оборудование', 'Интервал обслуживания (мес.)'],
+        ['Иван Иванов', '+375291234567', 'Газовый котёл', serviceInterval],
+      ]);
+
+      const result = await parser.parse(fileBuffer);
+
+      expect(result.rows[0]?.isValid).toBe(false);
+      expect(result.rows[0]?.data.serviceIntervalMonths).toBeNull();
+      expect(result.rows[0]?.errors).toContain(
+        'Интервал обслуживания должен быть целым числом больше 0',
+      );
+    },
+  );
 
   it('throws BadRequestException when required columns are missing', async () => {
     const fileBuffer = await createWorkbookBuffer([
@@ -135,6 +239,12 @@ describe('ClientImportParser', () => {
       phone: 'Мобильный телефон',
       email: 'Почта',
       equipment: 'Название_оборудования',
+      type: null,
+      manufacturer: null,
+      model: null,
+      serialNumber: null,
+      serviceIntervalMonths: null,
+      notes: null,
       installationDate: 'Дата монтажа',
       lastServiceDate: 'Дата предыдущего обслуживания',
       nextServiceDate: 'Плановая дата обслуживания',
@@ -147,6 +257,12 @@ describe('ClientImportParser', () => {
         phone: '+375291234567',
         email: 'petr@example.com',
         equipment: 'Кондиционер',
+        type: null,
+        manufacturer: null,
+        model: null,
+        serialNumber: null,
+        serviceIntervalMonths: null,
+        notes: null,
         installationDate: '2024-02-01',
         lastServiceDate: '2025-02-01',
         nextServiceDate: '2026-02-01',
@@ -183,6 +299,12 @@ describe('ClientImportParser', () => {
         phone: '',
         email: 'invalid-email',
         equipment: '',
+        type: null,
+        manufacturer: null,
+        model: null,
+        serialNumber: null,
+        serviceIntervalMonths: null,
+        notes: null,
         installationDate: null,
         lastServiceDate: null,
         nextServiceDate: '2026-02-01',
@@ -218,6 +340,12 @@ describe('ClientImportParser', () => {
         phone: '+375299876543',
         email: null,
         equipment: 'Водонагреватель',
+        type: null,
+        manufacturer: null,
+        model: null,
+        serialNumber: null,
+        serviceIntervalMonths: null,
+        notes: null,
         installationDate: null,
         lastServiceDate: null,
         nextServiceDate: null,

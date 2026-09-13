@@ -104,6 +104,21 @@ export class ClientImportWriter {
           },
         };
 
+        const equipmentDetails = {
+          ...(equipmentData.type ? { type: equipmentData.type } : {}),
+          ...(equipmentData.manufacturer
+            ? { manufacturer: equipmentData.manufacturer }
+            : {}),
+          ...(equipmentData.model ? { model: equipmentData.model } : {}),
+          ...(equipmentData.serialNumber
+            ? { serialNumber: equipmentData.serialNumber }
+            : {}),
+          ...(equipmentData.serviceIntervalMonths !== null
+            ? { serviceIntervalMonths: equipmentData.serviceIntervalMonths }
+            : {}),
+          ...(equipmentData.notes ? { notes: equipmentData.notes } : {}),
+        };
+
         const equipmentDates = {
           installationDate: toPrismaDate(equipmentData.installationDate),
           lastServiceDate: toPrismaDate(equipmentData.lastServiceDate),
@@ -124,11 +139,15 @@ export class ClientImportWriter {
 
         await transaction.equipment.upsert({
           where: equipmentWhere,
-          update: equipmentDateUpdates,
+          update: {
+            ...equipmentDetails,
+            ...equipmentDateUpdates,
+          },
           create: {
             companyId,
             clientId: equipmentData.clientId,
             name: equipmentData.name,
+            ...equipmentDetails,
             ...equipmentDates,
           },
         });

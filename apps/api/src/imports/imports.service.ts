@@ -7,6 +7,7 @@ import {
 
 import { PrismaService } from '../database/prisma/prisma.service';
 import { ClientImportParser } from './parsers/client-import.parser';
+import { createClientImportTemplate } from './templates/client-import-template';
 import { createFileHash } from './utils/file-hash';
 import { ClientImportWriter } from './writers/client-import.writer';
 
@@ -17,6 +18,12 @@ export class ImportsService {
     private readonly clientImportParser: ClientImportParser,
     private readonly clientImportWriter: ClientImportWriter,
   ) {}
+
+  async createTemplate(companyId: string): Promise<Buffer> {
+    await this.ensureCompanyExists(companyId);
+
+    return createClientImportTemplate();
+  }
 
   async preview(companyId: string, fileBuffer: Buffer) {
     await this.ensureCompanyExists(companyId);

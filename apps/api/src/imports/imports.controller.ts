@@ -1,12 +1,14 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Param,
   ParseFilePipeBuilder,
   ParseUUIDPipe,
   Post,
+  StreamableFile,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -19,6 +21,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiProduces,
   ApiTags,
 } from '@nestjs/swagger';
 
@@ -36,6 +39,35 @@ const XLSX_MIME_TYPE =
 @Controller('companies/:companyId/client-imports')
 export class ImportsController {
   constructor(private readonly importsService: ImportsService) {}
+
+  @Get('template')
+  @ApiOperation({
+    summary: 'Скачать Excel-шаблон для импорта клиентов и оборудования',
+  })
+  @ApiProduces(XLSX_MIME_TYPE)
+  @ApiOkResponse({
+    description: 'Excel-шаблон успешно создан',
+    schema: {
+      type: 'string',
+      format: 'binary',
+    },
+  })
+  @ApiNotFoundResponse({
+    description: 'Компания не найдена',
+    type: ImportErrorDto,
+  })
+  async downloadTemplate(
+    @Param('companyId', ParseUUIDPipe) companyId: string,
+  ): Promise<StreamableFile> {
+    const template = await this.importsService.createTemplate(companyId);
+
+    return new StreamableFile(template, {
+      type: XLSX_MIME_TYPE,
+      disposition:
+        'attachment; filename="service-cycle-client-import-template.xlsx"',
+      length: template.length,
+    });
+  }
 
   @Post('preview')
   @HttpCode(HttpStatus.OK)
