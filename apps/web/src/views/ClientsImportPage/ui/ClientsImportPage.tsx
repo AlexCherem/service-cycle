@@ -6,9 +6,6 @@ export function ClientsImportPage() {
     <section className={styles.page}>
       <header className={styles.header}>
         <h1 className={styles.title}>Импорт клиентов</h1>
-        <p className={styles.description}>
-          Загрузите клиентскую базу из Excel-файла.
-        </p>
       </header>
 
       <ImportClients />

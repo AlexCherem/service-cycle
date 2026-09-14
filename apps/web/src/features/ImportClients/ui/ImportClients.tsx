@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { InboxOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd';
-import { Button, message, Upload } from 'antd';
+import { Button, message, Steps, Upload } from 'antd';
 
 import { ButtonLink } from '@/shared/ui/ButtonLink';
 
@@ -13,7 +13,28 @@ import styles from './ImportClients.module.css';
 const ACCEPTED_FILE_EXTENSION = '.xlsx';
 const MAX_EXCEL_FILE_SIZE = 10 * 1024 * 1024;
 
+type ImportStep = 'upload' | 'preview' | 'success';
+
+const IMPORT_STEPS = [
+  {
+    title: 'Файл',
+  },
+  {
+    title: 'Проверка данных',
+  },
+  {
+    title: 'Импорт',
+  },
+];
+
+const IMPORT_STEP_INDEXES: Record<ImportStep, number> = {
+  upload: 0,
+  preview: 1,
+  success: 2,
+};
+
 export function ImportClients() {
+  const [currentStep, setCurrentStep] = useState<ImportStep>('upload');
   const [fileList, setFileList] = useState<UploadFile[]>([]);
 
   const uploadProps: UploadProps = {
@@ -51,23 +72,32 @@ export function ImportClients() {
       return;
     }
 
-    console.log('Выбран файл для импорта:', selectedFile);
+    setCurrentStep('preview');
   }
 
   return (
     <div className={styles.container}>
-      <Upload.Dragger {...uploadProps}>
-        <p className={styles.uploadIcon}>
-          <InboxOutlined />
-        </p>
+      <Steps current={IMPORT_STEP_INDEXES[currentStep]} items={IMPORT_STEPS} />
+      {currentStep === 'upload' && (
+        <>
+          <Upload.Dragger {...uploadProps}>
+            <p className={styles.uploadIcon}>
+              <InboxOutlined />
+            </p>
 
-        <p className={styles.uploadTitle}>Нажмите или перетащите Excel-файл</p>
+            <p className={styles.uploadTitle}>
+              Нажмите или перетащите Excel-файл
+            </p>
 
-        <p className={styles.uploadDescription}>
-          Поддерживается один файл в формате .xlsx
-        </p>
-      </Upload.Dragger>
-
+            <p className={styles.uploadDescription}>
+              Поддерживается один файл в формате .xlsx
+            </p>
+          </Upload.Dragger>
+        </>
+      )}
+      {currentStep === 'preview' && (
+        <p>Здесь будет предпросмотр импортируемых данных</p>
+      )}
       <div className={styles.requirements}>
         <h2 className={styles.requirementsTitle}>Требования к файлу</h2>
 
@@ -94,7 +124,7 @@ export function ImportClients() {
           onClick={handleImport}
           type="primary"
         >
-          Импортировать
+          Продолжить
         </Button>
       </div>
     </div>
