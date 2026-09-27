@@ -8,6 +8,7 @@ jest.mock('@nestjs/jwt', () => ({
 
 type EquipmentServiceMock = {
   findAll: jest.Mock;
+  findOne: jest.Mock;
 };
 
 describe('EquipmentController', () => {
@@ -17,6 +18,7 @@ describe('EquipmentController', () => {
   beforeEach(() => {
     equipmentService = {
       findAll: jest.fn(),
+      findOne: jest.fn(),
     };
 
     equipmentController = new EquipmentController(
@@ -52,6 +54,33 @@ describe('EquipmentController', () => {
 
     expect(equipmentService.findAll).toHaveBeenCalledWith(companyId, query);
 
+    expect(result).toBe(serviceResult);
+  });
+
+  it('gets equipment details using companyId from the authenticated user', async () => {
+    const companyId = '7cfad2ad-8c32-4614-bd68-4882d7998655';
+    const equipmentId = '960ae682-3486-4fd5-8709-76b650582f84';
+
+    const request = {
+      user: {
+        userId: '33acfe7d-09e8-44d5-8f73-f7311fcb5fd4',
+        companyId,
+      },
+      query: {
+        companyId: '11111111-1111-4111-8111-111111111111',
+      },
+    } as unknown as AuthenticatedRequest;
+
+    const serviceResult = { id: equipmentId };
+
+    equipmentService.findOne.mockResolvedValue(serviceResult);
+
+    const result = await equipmentController.findOne(request, equipmentId);
+
+    expect(equipmentService.findOne).toHaveBeenCalledWith(
+      companyId,
+      equipmentId,
+    );
     expect(result).toBe(serviceResult);
   });
 });

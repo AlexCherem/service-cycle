@@ -1,7 +1,16 @@
-import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiCookieAuth,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -11,6 +20,7 @@ import {
 import { AccessTokenGuard } from '../auth/access-token.guard';
 import { ACCESS_TOKEN_COOKIE_NAME } from '../auth/auth.constants';
 import type { AuthenticatedRequest } from '../auth/authenticated-user.type';
+import { EquipmentDetailsResponseDto } from './dto/equipment-details-response.dto';
 import { ListEquipmentQueryDto } from './dto/list-equipment-query.dto';
 import { ListEquipmentResponseDto } from './dto/list-equipment-response.dto';
 import { EquipmentService } from './equipment.service';
@@ -41,5 +51,29 @@ export class EquipmentController {
     @Query() query: ListEquipmentQueryDto,
   ): Promise<ListEquipmentResponseDto> {
     return this.equipmentService.findAll(request.user.companyId, query);
+  }
+
+  @Get(':equipmentId')
+  @ApiOperation({
+    summary: 'Получить детальную карточку оборудования',
+  })
+  @ApiOkResponse({
+    description: 'Оборудование с техническими полями, датами и клиентом',
+    type: EquipmentDetailsResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Некорректный идентификатор оборудования',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Access token отсутствует или недействителен',
+  })
+  @ApiNotFoundResponse({
+    description: 'Оборудование не найдено',
+  })
+  findOne(
+    @Req() request: AuthenticatedRequest,
+    @Param('equipmentId', ParseUUIDPipe) equipmentId: string,
+  ): Promise<EquipmentDetailsResponseDto> {
+    return this.equipmentService.findOne(request.user.companyId, equipmentId);
   }
 }
