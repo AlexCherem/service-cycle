@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../database/prisma/prisma.service';
 import type { Prisma } from '../generated/prisma/client';
+import { EquipmentDetailsResponseDto } from './dto/equipment-details-response.dto';
 import { ListEquipmentQueryDto } from './dto/list-equipment-query.dto';
 import { ListEquipmentResponseDto } from './dto/list-equipment-response.dto';
 import {
@@ -17,6 +18,54 @@ const toDateOnly = (value: Date | null): string | null => {
 @Injectable()
 export class EquipmentService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async findOne(
+    companyId: string,
+    equipmentId: string,
+  ): Promise<EquipmentDetailsResponseDto> {
+    const equipment = await this.prisma.equipment.findFirst({
+      where: {
+        id: equipmentId,
+        companyId,
+        client: {
+          companyId,
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        manufacturer: true,
+        model: true,
+        serialNumber: true,
+        serviceIntervalMonths: true,
+        notes: true,
+        installationDate: true,
+        lastServiceDate: true,
+        nextServiceDate: true,
+        client: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!equipment) {
+      throw new NotFoundException('Оборудование не найдено');
+    }
+
+    const today = getBusinessToday();
+
+    return {
+      ...equipment,
+      installationDate: toDateOnly(equipment.installationDate),
+      lastServiceDate: toDateOnly(equipment.lastServiceDate),
+      nextServiceDate: toDateOnly(equipment.nextServiceDate),
+      status: calculateEquipmentServiceStatus(equipment.nextServiceDate, today),
+    };
+  }
 
   async findAll(
     companyId: string,

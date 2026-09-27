@@ -1,3 +1,5 @@
+import { NotFoundException } from '@nestjs/common';
+
 import { PrismaService } from '../database/prisma/prisma.service';
 import { EquipmentServiceStatus } from './dto/equipment-service-status.enum';
 import { EquipmentService } from './equipment.service';
@@ -6,6 +8,7 @@ type PrismaMock = {
   equipment: {
     findMany: jest.Mock;
     count: jest.Mock;
+    findFirst: jest.Mock;
   };
   $transaction: jest.Mock;
 };
@@ -22,6 +25,7 @@ describe('EquipmentService', () => {
       equipment: {
         findMany: jest.fn(),
         count: jest.fn(),
+        findFirst: jest.fn(),
       },
       $transaction: jest.fn(),
     };
@@ -31,6 +35,105 @@ describe('EquipmentService', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+  });
+
+  it('returns equipment details scoped to the company', async () => {
+    const companyId = '7cfad2ad-8c32-4614-bd68-4882d7998655';
+    const equipmentId = '960ae682-3486-4fd5-8709-76b650582f84';
+
+    prisma.equipment.findFirst.mockResolvedValue({
+      id: equipmentId,
+      name: 'Газовый котёл',
+      type: 'Котёл',
+      manufacturer: 'Bosch',
+      model: 'Gaz 6000 W',
+      serialNumber: 'SN-123456',
+      serviceIntervalMonths: 12,
+      notes: 'Установлен в котельной',
+      installationDate: new Date('2024-09-15T00:00:00.000Z'),
+      lastServiceDate: new Date('2025-09-15T00:00:00.000Z'),
+      nextServiceDate: new Date('2026-09-15T00:00:00.000Z'),
+      client: {
+        id: '8810c8d6-67ee-49bd-82c8-4cd4865e9ac5',
+        name: 'Иван Иванов',
+      },
+    });
+
+    const result = await equipmentService.findOne(companyId, equipmentId);
+
+    expect(prisma.equipment.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: equipmentId,
+          companyId,
+          client: {
+            companyId,
+          },
+        },
+      }),
+    );
+
+    expect(result).toEqual({
+      id: equipmentId,
+      name: 'Газовый котёл',
+      type: 'Котёл',
+      manufacturer: 'Bosch',
+      model: 'Gaz 6000 W',
+      serialNumber: 'SN-123456',
+      serviceIntervalMonths: 12,
+      notes: 'Установлен в котельной',
+      installationDate: '2024-09-15',
+      lastServiceDate: '2025-09-15',
+      nextServiceDate: '2026-09-15',
+      status: EquipmentServiceStatus.DUE_SOON,
+      client: {
+        id: '8810c8d6-67ee-49bd-82c8-4cd4865e9ac5',
+        name: 'Иван Иванов',
+      },
+    });
+  });
+
+  it('throws NotFoundException when no equipment matches the tenant filter', async () => {
+    prisma.equipment.findFirst.mockResolvedValue(null);
+
+    await expect(
+      equipmentService.findOne(
+        '7cfad2ad-8c32-4614-bd68-4882d7998655',
+        '960ae682-3486-4fd5-8709-76b650582f84',
+      ),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it('preserves null fields and returns UNSCHEDULED without a service date', async () => {
+    const companyId = '7cfad2ad-8c32-4614-bd68-4882d7998655';
+    const equipmentId = '960ae682-3486-4fd5-8709-76b650582f84';
+
+    const equipment = {
+      id: equipmentId,
+      name: 'Газовый котёл',
+      type: null,
+      manufacturer: null,
+      model: null,
+      serialNumber: null,
+      serviceIntervalMonths: null,
+      notes: null,
+      installationDate: null,
+      lastServiceDate: null,
+      nextServiceDate: null,
+      client: {
+        id: '8810c8d6-67ee-49bd-82c8-4cd4865e9ac5',
+        name: 'Иван Иванов',
+      },
+    };
+
+    prisma.equipment.findFirst.mockResolvedValue(equipment);
+
+    const result = await equipmentService.findOne(companyId, equipmentId);
+
+    expect(result).toEqual({
+      ...equipment,
+      status: EquipmentServiceStatus.UNSCHEDULED,
+    });
   });
 
   it('returns paginated equipment for the requested company', async () => {
