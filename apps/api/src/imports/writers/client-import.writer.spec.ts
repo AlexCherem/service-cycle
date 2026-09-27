@@ -1,41 +1,29 @@
+import { ConflictException } from '@nestjs/common';
+
 import { PrismaService } from '../../database/prisma/prisma.service';
+import { Prisma } from '../../generated/prisma/client';
 import type { ClientImportRow } from '../parsers/client-import.parser';
 import { ClientImportWriter } from './client-import.writer';
 
-type TransactionMock = {
-  client: {
-    findMany: jest.Mock;
-    upsert: jest.Mock;
-  };
-  equipment: {
-    findMany: jest.Mock;
-    upsert: jest.Mock;
-  };
-};
-
-type PrismaMock = {
-  $transaction: jest.Mock;
-};
-
 const createRow = (
-  rowNumber: number,
+  serialNumber: string | null,
   data: Partial<ClientImportRow['data']> = {},
 ): ClientImportRow => ({
-  rowNumber,
+  rowNumber: 2,
   data: {
-    name: 'Иван Иванов',
+    name: 'Иван',
     phone: '+375291234567',
-    email: 'ivan@example.com',
-    equipment: 'Газовый котёл',
+    email: null,
+    equipment: 'Кондиционер',
+    serialNumber,
     type: null,
     manufacturer: null,
     model: null,
-    serialNumber: null,
-    serviceIntervalMonths: null,
     notes: null,
-    installationDate: '2024-02-01',
-    lastServiceDate: '2025-02-01',
-    nextServiceDate: '2026-02-01',
+    serviceIntervalMonths: null,
+    installationDate: null,
+    lastServiceDate: null,
+    nextServiceDate: null,
     ...data,
   },
   isValid: true,
@@ -43,262 +31,183 @@ const createRow = (
   warnings: [],
 });
 
+const companyId = 'company-a';
+const clientId = 'client-a';
+
 describe('ClientImportWriter', () => {
+  const transaction = {
+    client: { findMany: jest.fn(), upsert: jest.fn() },
+    equipment: { findMany: jest.fn(), create: jest.fn(), update: jest.fn() },
+  };
+  const prisma = { $transaction: jest.fn() };
   let writer: ClientImportWriter;
-  let prisma: PrismaMock;
-  let transaction: TransactionMock;
 
   beforeEach(() => {
-    transaction = {
-      client: {
-        findMany: jest.fn(),
-        upsert: jest.fn(),
-      },
-      equipment: {
-        findMany: jest.fn(),
-        upsert: jest.fn(),
-      },
-    };
-
-    prisma = {
-      $transaction: jest.fn(),
-    };
-
+    jest.resetAllMocks();
+    transaction.client.findMany.mockResolvedValue([]);
+    transaction.client.upsert.mockResolvedValue({ id: clientId });
+    transaction.equipment.findMany.mockResolvedValue([]);
     prisma.$transaction.mockImplementation(
-      (callback: (transaction: TransactionMock) => Promise<unknown>) =>
+      (callback: (tx: typeof transaction) => Promise<unknown>) =>
         callback(transaction),
     );
-
     writer = new ClientImportWriter(prisma as unknown as PrismaService);
   });
 
-  it('upserts clients and equipment and returns created and updated counts', async () => {
-    const companyId = '7cfad2ad-8c32-4614-bd68-4882d7998655';
-    const existingClientId = '8810c8d6-67ee-49bd-82c8-4cd4865e9ac5';
-    const newClientId = 'f09be5ae-b40c-4ad4-af3d-f43450a0ca78';
-
-    const rows = [
-      createRow(2, {
-        name: 'Существующий клиент',
-        email: null,
-        installationDate: null,
-        lastServiceDate: null,
-        nextServiceDate: null,
-      }),
-      createRow(3, {
-        name: 'Новый клиент',
-        phone: '+375299876543',
-        email: 'new@example.com',
-        equipment: 'Кондиционер',
-        type: 'Настенный кондиционер',
-        manufacturer: 'Daikin',
-        model: 'FTXF35',
-        serialNumber: 'SN-654321',
-        serviceIntervalMonths: 12,
-        notes: 'Внутренний блок установлен в гостиной',
-        installationDate: '2024-03-10',
-        lastServiceDate: '2025-03-10',
-        nextServiceDate: '2026-03-10',
-      }),
-    ];
-
-    transaction.client.findMany.mockResolvedValue([
-      {
-        phone: '+375291234567',
-      },
+  it('creates distinct equipment with the same name and different serial numbers', async () => {
+    const result = await writer.write(companyId, [
+      createRow('001'),
+      createRow('002'),
     ]);
-    transaction.client.upsert
-      .mockResolvedValueOnce({ id: existingClientId })
-      .mockResolvedValueOnce({ id: newClientId });
-    transaction.equipment.findMany.mockResolvedValue([
-      {
-        clientId: existingClientId,
-        name: 'Газовый котёл',
-      },
-    ]);
-    transaction.equipment.upsert.mockResolvedValue({});
-
-    const result = await writer.write(companyId, rows);
-
-    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-    expect(transaction.client.findMany).toHaveBeenCalledWith({
-      where: {
+    expect(transaction.client.upsert).toHaveBeenCalledTimes(1);
+    expect(transaction.equipment.create).toHaveBeenCalledTimes(2);
+    expect(transaction.equipment.create).toHaveBeenNthCalledWith(1, {
+      data: {
         companyId,
-        phone: {
-          in: ['+375291234567', '+375299876543'],
-        },
-      },
-      select: {
-        phone: true,
-      },
-    });
-
-    expect(transaction.client.upsert).toHaveBeenNthCalledWith(1, {
-      where: {
-        companyId_phone: {
-          companyId,
-          phone: '+375291234567',
-        },
-      },
-      update: {
-        name: 'Существующий клиент',
-      },
-      create: {
-        companyId,
-        name: 'Существующий клиент',
-        phone: '+375291234567',
-        email: null,
-      },
-    });
-    expect(transaction.client.upsert).toHaveBeenNthCalledWith(2, {
-      where: {
-        companyId_phone: {
-          companyId,
-          phone: '+375299876543',
-        },
-      },
-      update: {
-        name: 'Новый клиент',
-        email: 'new@example.com',
-      },
-      create: {
-        companyId,
-        name: 'Новый клиент',
-        phone: '+375299876543',
-        email: 'new@example.com',
-      },
-    });
-
-    expect(transaction.equipment.findMany).toHaveBeenCalledWith({
-      where: {
-        OR: [
-          {
-            clientId: existingClientId,
-            name: 'Газовый котёл',
-          },
-          {
-            clientId: newClientId,
-            name: 'Кондиционер',
-          },
-        ],
-      },
-      select: {
-        clientId: true,
-        name: true,
-      },
-    });
-
-    expect(transaction.equipment.upsert).toHaveBeenNthCalledWith(1, {
-      where: {
-        clientId_name: {
-          clientId: existingClientId,
-          name: 'Газовый котёл',
-        },
-      },
-      update: {},
-      create: {
-        companyId,
-        clientId: existingClientId,
-        name: 'Газовый котёл',
-        installationDate: null,
-        lastServiceDate: null,
-        nextServiceDate: null,
-      },
-    });
-    expect(transaction.equipment.upsert).toHaveBeenNthCalledWith(2, {
-      where: {
-        clientId_name: {
-          clientId: newClientId,
-          name: 'Кондиционер',
-        },
-      },
-      update: {
-        type: 'Настенный кондиционер',
-        manufacturer: 'Daikin',
-        model: 'FTXF35',
-        serialNumber: 'SN-654321',
-        serviceIntervalMonths: 12,
-        notes: 'Внутренний блок установлен в гостиной',
-        installationDate: new Date('2024-03-10T00:00:00.000Z'),
-        lastServiceDate: new Date('2025-03-10T00:00:00.000Z'),
-        nextServiceDate: new Date('2026-03-10T00:00:00.000Z'),
-      },
-      create: {
-        companyId,
-        clientId: newClientId,
+        clientId,
         name: 'Кондиционер',
-        type: 'Настенный кондиционер',
-        manufacturer: 'Daikin',
-        model: 'FTXF35',
-        serialNumber: 'SN-654321',
-        serviceIntervalMonths: 12,
-        notes: 'Внутренний блок установлен в гостиной',
-        installationDate: new Date('2024-03-10T00:00:00.000Z'),
-        lastServiceDate: new Date('2025-03-10T00:00:00.000Z'),
-        nextServiceDate: new Date('2026-03-10T00:00:00.000Z'),
+        serialNumber: '001',
+        installationDate: null,
+        lastServiceDate: null,
+        nextServiceDate: null,
       },
     });
+    expect(transaction.equipment.create).toHaveBeenNthCalledWith(2, {
+      data: {
+        companyId,
+        clientId,
+        name: 'Кондиционер',
+        serialNumber: '002',
+        installationDate: null,
+        lastServiceDate: null,
+        nextServiceDate: null,
+      },
+    });
+    expect(result).toEqual({
+      createdClientCount: 1,
+      updatedClientCount: 0,
+      createdEquipmentCount: 2,
+      updatedEquipmentCount: 0,
+    });
+    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: 'Serializable',
+    });
+  });
 
+  it('updates a matching serial and adds new equipment and clients', async () => {
+    transaction.client.findMany.mockResolvedValue([{ phone: '+375291234567' }]);
+    transaction.client.upsert
+      .mockResolvedValueOnce({ id: clientId })
+      .mockResolvedValueOnce({ id: 'new-client' });
+    transaction.equipment.findMany
+      .mockResolvedValueOnce([
+        { serialNumber: '001', client: { phone: '+375291234567' } },
+      ])
+      .mockResolvedValueOnce([{ id: 'equipment-a' }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    const result = await writer.write(companyId, [
+      createRow('001', {
+        equipment: 'Новое название',
+        notes: 'Обновлено',
+        nextServiceDate: '2027-09-15',
+      }),
+      createRow('002'),
+      createRow('001', { phone: '+375299876543', name: 'Новый клиент' }),
+    ]);
+    expect(transaction.equipment.findMany).toHaveBeenNthCalledWith(2, {
+      where: {
+        companyId,
+        clientId,
+        client: { companyId },
+        serialNumber: '001',
+      },
+      select: { id: true },
+      take: 2,
+    });
+    expect(transaction.equipment.update).toHaveBeenCalledWith({
+      where: { id: 'equipment-a', companyId, clientId, client: { companyId } },
+      data: {
+        name: 'Новое название',
+        serialNumber: '001',
+        notes: 'Обновлено',
+        nextServiceDate: new Date('2027-09-15T00:00:00.000Z'),
+      },
+    });
     expect(result).toEqual({
       createdClientCount: 1,
       updatedClientCount: 1,
-      createdEquipmentCount: 1,
+      createdEquipmentCount: 2,
       updatedEquipmentCount: 1,
     });
   });
 
-  it('merges duplicate rows before writing them', async () => {
-    const companyId = '7cfad2ad-8c32-4614-bd68-4882d7998655';
-    const clientId = '8810c8d6-67ee-49bd-82c8-4cd4865e9ac5';
+  it('rejects repeated identities in a file instead of merging rows', async () => {
+    await expect(
+      writer.write(companyId, [createRow('001'), createRow('001')]),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(transaction.client.upsert).not.toHaveBeenCalled();
+    expect(transaction.equipment.create).not.toHaveBeenCalled();
+  });
 
-    const rows = [
-      createRow(2, {
-        installationDate: '2024-02-01',
-        lastServiceDate: null,
+  it('rejects missing serial numbers before writing clients', async () => {
+    await expect(
+      writer.write(companyId, [createRow(null)]),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(transaction.client.upsert).not.toHaveBeenCalled();
+  });
+
+  it('rechecks ambiguous database matches inside the transaction', async () => {
+    transaction.equipment.findMany.mockResolvedValue([
+      { serialNumber: '001', client: { phone: '+375291234567' } },
+      { serialNumber: '001', client: { phone: '+375291234567' } },
+    ]);
+    await expect(
+      writer.write(companyId, [createRow('001')]),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(transaction.client.upsert).not.toHaveBeenCalled();
+  });
+
+  it('rejects dates incompatible with retained data inside the transaction', async () => {
+    transaction.equipment.findMany.mockResolvedValue([
+      {
+        serialNumber: '001',
+        client: { phone: '+375291234567' },
+        installationDate: new Date('2024-01-01'),
+        lastServiceDate: new Date('2025-01-01'),
         nextServiceDate: null,
-      }),
-      createRow(3, {
-        name: 'Иван Иванов обновлённый',
-        email: null,
-        installationDate: null,
-        lastServiceDate: '2025-02-01',
-        nextServiceDate: '2026-02-01',
-      }),
-    ];
+      },
+    ]);
+    await expect(
+      writer.write(companyId, [
+        createRow('001', { installationDate: '2026-01-01' }),
+      ]),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(transaction.client.upsert).not.toHaveBeenCalled();
+    expect(transaction.equipment.update).not.toHaveBeenCalled();
+  });
 
-    transaction.client.findMany.mockResolvedValue([]);
-    transaction.client.upsert.mockResolvedValue({ id: clientId });
-    transaction.equipment.findMany.mockResolvedValue([]);
-    transaction.equipment.upsert.mockResolvedValue({});
-
-    const result = await writer.write(companyId, rows);
-
-    expect(transaction.client.upsert).toHaveBeenCalledTimes(1);
-    expect(transaction.client.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        update: {
-          name: 'Иван Иванов обновлённый',
-          email: 'ivan@example.com',
-        },
+  it('retries serialization conflicts so parallel imports do not create duplicates', async () => {
+    prisma.$transaction.mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError('conflict', {
+        code: 'P2034',
+        clientVersion: 'test',
       }),
     );
+    await writer.write(companyId, [createRow('001')]);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+  });
 
-    expect(transaction.equipment.upsert).toHaveBeenCalledTimes(1);
-    expect(transaction.equipment.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        update: {
-          installationDate: new Date('2024-02-01T00:00:00.000Z'),
-          lastServiceDate: new Date('2025-02-01T00:00:00.000Z'),
-          nextServiceDate: new Date('2026-02-01T00:00:00.000Z'),
-        },
+  it('returns a conflict after bounded serialization retries', async () => {
+    prisma.$transaction.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('conflict', {
+        code: 'P2034',
+        clientVersion: 'test',
       }),
     );
-
-    expect(result).toEqual({
-      createdClientCount: 1,
-      updatedClientCount: 0,
-      createdEquipmentCount: 1,
-      updatedEquipmentCount: 0,
-    });
+    await expect(
+      writer.write(companyId, [createRow('001')]),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(3);
   });
 });

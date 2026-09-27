@@ -1,6 +1,7 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../database/prisma/prisma.service';
+import { Prisma } from '../generated/prisma/client';
 import { EquipmentServiceStatus } from './dto/equipment-service-status.enum';
 import { EquipmentService } from './equipment.service';
 
@@ -9,6 +10,7 @@ type PrismaMock = {
     findMany: jest.Mock;
     count: jest.Mock;
     findFirst: jest.Mock;
+    update: jest.Mock;
   };
   $transaction: jest.Mock;
 };
@@ -26,8 +28,17 @@ describe('EquipmentService', () => {
         findMany: jest.fn(),
         count: jest.fn(),
         findFirst: jest.fn(),
+        update: jest.fn(),
       },
-      $transaction: jest.fn(),
+      $transaction: jest
+        .fn()
+        .mockImplementation(
+          (
+            callback: (
+              transaction: Pick<PrismaMock, 'equipment'>,
+            ) => Promise<unknown>,
+          ) => callback(prisma),
+        ),
     };
 
     equipmentService = new EquipmentService(prisma as unknown as PrismaService);
@@ -36,6 +47,145 @@ describe('EquipmentService', () => {
   afterEach(() => {
     jest.useRealTimers();
   });
+
+  it('updates allowed fields with tenant scope and returns recalculated details', async () => {
+    const stored = {
+      id: 'equipment-a',
+      name: 'Кондиционер',
+      type: null,
+      manufacturer: 'Daikin',
+      model: null,
+      serialNumber: '001',
+      serviceIntervalMonths: 12,
+      notes: null,
+      installationDate: new Date('2024-01-01T00:00:00.000Z'),
+      lastServiceDate: null,
+      nextServiceDate: new Date('2026-09-15T00:00:00.000Z'),
+      client: { id: 'client-a', name: 'Иван' },
+    };
+    prisma.equipment.update.mockResolvedValue(stored);
+    const result = await equipmentService.update('company-a', 'equipment-a', {
+      name: 'Кондиционер',
+      notes: null,
+      nextServiceDate: '2026-09-15',
+    });
+    expect(prisma.equipment.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'equipment-a',
+          companyId: 'company-a',
+          client: { companyId: 'company-a' },
+        },
+        data: {
+          name: 'Кондиционер',
+          type: undefined,
+          manufacturer: undefined,
+          model: undefined,
+          serialNumber: undefined,
+          serviceIntervalMonths: undefined,
+          notes: null,
+          installationDate: undefined,
+          lastServiceDate: undefined,
+          nextServiceDate: new Date('2026-09-15T00:00:00.000Z'),
+        },
+      }),
+    );
+    expect(result).toEqual({
+      ...stored,
+      installationDate: '2024-01-01',
+      nextServiceDate: '2026-09-15',
+      status: EquipmentServiceStatus.DUE_SOON,
+    });
+  });
+
+  it('clears a service date with null and returns UNSCHEDULED', async () => {
+    prisma.equipment.update.mockResolvedValue({
+      id: 'equipment-a',
+      installationDate: null,
+      lastServiceDate: null,
+      nextServiceDate: null,
+    });
+    const result = await equipmentService.update('company-a', 'equipment-a', {
+      nextServiceDate: null,
+    });
+    expect(result.nextServiceDate).toBeNull();
+    expect(result.status).toBe(EquipmentServiceStatus.UNSCHEDULED);
+    const args = prisma.equipment.update.mock.calls[0] as [
+      { data: { nextServiceDate: unknown } },
+    ];
+    expect(args[0].data.nextServiceDate).toBeNull();
+  });
+
+  it('maps an update outside tenant scope to not found', async () => {
+    prisma.equipment.update.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('not found', {
+        code: 'P2025',
+        clientVersion: 'test',
+      }),
+    );
+    await expect(
+      equipmentService.update('other-company', 'equipment-a', {
+        notes: 'changed',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('does not hide unexpected update errors', async () => {
+    const failure = new Error('database unavailable');
+    prisma.equipment.update.mockRejectedValue(failure);
+    await expect(
+      equipmentService.update('company-a', 'equipment-a', { notes: 'changed' }),
+    ).rejects.toBe(failure);
+  });
+
+  it.each([
+    ['2026-09-15', '2026-09-14', null],
+    ['2026-09-15', null, '2026-09-14'],
+    ['2026-09-01', '2026-09-15', '2026-09-14'],
+  ])(
+    'rejects inconsistent final dates: %s, %s, %s',
+    async (installation, last, next) => {
+      prisma.equipment.update.mockResolvedValue({
+        installationDate: installation ? new Date(installation) : null,
+        lastServiceDate: last ? new Date(last) : null,
+        nextServiceDate: next ? new Date(next) : null,
+      });
+      // Only one field was supplied; validation must also consider stored dates.
+      await expect(
+        equipmentService.update('company-a', 'equipment-a', {
+          nextServiceDate: next,
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it.each([
+    ['2026-09-15', '2026-09-15', '2026-09-15'],
+    ['2026-09-15', null, '2026-09-16'],
+    [null, '2026-09-15', '2026-09-16'],
+    [null, null, null],
+  ])(
+    'accepts equal, ordered and cleared dates: %s, %s, %s',
+    async (installation, last, next) => {
+      prisma.equipment.update.mockResolvedValue({
+        installationDate: installation ? new Date(installation) : null,
+        lastServiceDate: last ? new Date(last) : null,
+        nextServiceDate: next ? new Date(next) : null,
+      });
+      await expect(
+        equipmentService.update('company-a', 'equipment-a', {
+          installationDate: installation,
+          lastServiceDate: last,
+          nextServiceDate: next,
+        }),
+      ).resolves.toMatchObject({
+        installationDate: installation,
+        lastServiceDate: last,
+        nextServiceDate: next,
+      });
+    },
+  );
 
   it('returns equipment details scoped to the company', async () => {
     const companyId = '7cfad2ad-8c32-4614-bd68-4882d7998655';

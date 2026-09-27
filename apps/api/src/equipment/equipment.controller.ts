@@ -1,8 +1,10 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Query,
   Req,
   UseGuards,
@@ -23,6 +25,7 @@ import type { AuthenticatedRequest } from '../auth/authenticated-user.type';
 import { EquipmentDetailsResponseDto } from './dto/equipment-details-response.dto';
 import { ListEquipmentQueryDto } from './dto/list-equipment-query.dto';
 import { ListEquipmentResponseDto } from './dto/list-equipment-response.dto';
+import { UpdateEquipmentDto } from './dto/update-equipment.dto';
 import { EquipmentService } from './equipment.service';
 
 @ApiTags('equipment')
@@ -75,5 +78,34 @@ export class EquipmentController {
     @Param('equipmentId', ParseUUIDPipe) equipmentId: string,
   ): Promise<EquipmentDetailsResponseDto> {
     return this.equipmentService.findOne(request.user.companyId, equipmentId);
+  }
+
+  @Patch(':equipmentId')
+  @ApiOperation({
+    summary: 'Частично обновить оборудование',
+  })
+  @ApiOkResponse({
+    description: 'Обновлённая карточка оборудования',
+    type: EquipmentDetailsResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Некорректный идентификатор или данные оборудования',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Access token отсутствует или недействителен',
+  })
+  @ApiNotFoundResponse({
+    description: 'Оборудование не найдено',
+  })
+  update(
+    @Req() request: AuthenticatedRequest,
+    @Param('equipmentId', ParseUUIDPipe) equipmentId: string,
+    @Body() dto: UpdateEquipmentDto,
+  ): Promise<EquipmentDetailsResponseDto> {
+    return this.equipmentService.update(
+      request.user.companyId,
+      equipmentId,
+      dto,
+    );
   }
 }
