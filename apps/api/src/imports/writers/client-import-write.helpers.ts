@@ -19,10 +19,6 @@ export type EquipmentWriteData = {
   nextServiceDate: string | null;
 };
 
-export const getEquipmentKey = (clientId: string, name: string): string => {
-  return `${clientId}:${name}`;
-};
-
 export const collectClients = (rows: ClientImportRow[]): ClientWriteData[] => {
   const clientsByPhone = new Map<string, ClientWriteData>();
 
@@ -43,44 +39,25 @@ export const collectEquipment = (
   rows: ClientImportRow[],
   clientIdsByPhone: Map<string, string>,
 ): EquipmentWriteData[] => {
-  const equipmentByKey = new Map<string, EquipmentWriteData>();
-
-  for (const row of rows) {
+  return rows.map((row) => {
     const clientId = clientIdsByPhone.get(row.data.phone);
-
     if (!clientId) {
       throw new Error(
         `Не удалось определить клиента для телефона ${row.data.phone}`,
       );
     }
-
-    const equipmentKey = getEquipmentKey(clientId, row.data.equipment);
-    const existingEquipment = equipmentByKey.get(equipmentKey);
-
-    equipmentByKey.set(equipmentKey, {
+    return {
       clientId,
-      type: row.data.type ?? existingEquipment?.type ?? null,
-      manufacturer:
-        row.data.manufacturer ?? existingEquipment?.manufacturer ?? null,
-      model: row.data.model ?? existingEquipment?.model ?? null,
-      serialNumber:
-        row.data.serialNumber ?? existingEquipment?.serialNumber ?? null,
-      serviceIntervalMonths:
-        row.data.serviceIntervalMonths ??
-        existingEquipment?.serviceIntervalMonths ??
-        null,
-      notes: row.data.notes ?? existingEquipment?.notes ?? null,
       name: row.data.equipment,
-      installationDate:
-        row.data.installationDate ??
-        existingEquipment?.installationDate ??
-        null,
-      lastServiceDate:
-        row.data.lastServiceDate ?? existingEquipment?.lastServiceDate ?? null,
-      nextServiceDate:
-        row.data.nextServiceDate ?? existingEquipment?.nextServiceDate ?? null,
-    });
-  }
-
-  return [...equipmentByKey.values()];
+      type: row.data.type,
+      manufacturer: row.data.manufacturer,
+      model: row.data.model,
+      serialNumber: row.data.serialNumber?.trim() ?? null,
+      serviceIntervalMonths: row.data.serviceIntervalMonths,
+      notes: row.data.notes,
+      installationDate: row.data.installationDate,
+      lastServiceDate: row.data.lastServiceDate,
+      nextServiceDate: row.data.nextServiceDate,
+    };
+  });
 };

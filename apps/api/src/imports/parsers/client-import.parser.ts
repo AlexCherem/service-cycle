@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import ExcelJS from 'exceljs';
 
+import { getEquipmentDateErrors } from '../../equipment/utils/get-equipment-date-errors';
 import { normalizeBelarusPhone, parseExcelDate } from './import-value.parsers';
 
 const readCellText = (cell: ExcelJS.Cell): string => {
@@ -314,28 +315,13 @@ export class ClientImportParser {
         errors.push('Дата следующего обслуживания имеет неверный формат');
       }
 
-      if (
-        installationDate.value &&
-        lastServiceDate.value &&
-        lastServiceDate.value < installationDate.value
-      ) {
-        errors.push(
-          'Дата последнего обслуживания не может быть раньше даты установки',
-        );
-      }
-
-      const serviceReferenceDate =
-        lastServiceDate.value ?? installationDate.value;
-
-      if (
-        serviceReferenceDate &&
-        nextServiceDate.value &&
-        nextServiceDate.value < serviceReferenceDate
-      ) {
-        errors.push(
-          'Дата следующего обслуживания не может быть раньше предыдущей даты',
-        );
-      }
+      errors.push(
+        ...getEquipmentDateErrors({
+          installationDate: installationDate.value,
+          lastServiceDate: lastServiceDate.value,
+          nextServiceDate: nextServiceDate.value,
+        }),
+      );
 
       if (
         !installationDate.isInvalid &&

@@ -121,6 +121,8 @@ export class ImportClientDataDto {
 
   @ApiProperty({
     example: 'SN-123456',
+    description:
+      'Обязателен для импорта. Используется для сопоставления оборудования в пределах клиента; строки без номера требуют уточнения.',
     nullable: true,
     type: String,
   })

@@ -80,7 +80,7 @@ model Equipment {
   createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  @@unique([clientId, name], map: "equipment_client_id_name_key")
+  @@index([companyId, clientId, serialNumber], map: "equipment_company_client_serial_idx")
   @@index([companyId, clientId], map: "equipment_company_id_client_id_idx")
   @@map("equipment")
 }

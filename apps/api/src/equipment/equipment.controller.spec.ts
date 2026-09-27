@@ -9,6 +9,7 @@ jest.mock('@nestjs/jwt', () => ({
 type EquipmentServiceMock = {
   findAll: jest.Mock;
   findOne: jest.Mock;
+  update: jest.Mock;
 };
 
 describe('EquipmentController', () => {
@@ -19,10 +20,29 @@ describe('EquipmentController', () => {
     equipmentService = {
       findAll: jest.fn(),
       findOne: jest.fn(),
+      update: jest.fn(),
     };
 
     equipmentController = new EquipmentController(
       equipmentService as unknown as EquipmentService,
+    );
+  });
+
+  it('updates using the company from the authenticated user', async () => {
+    const request = {
+      user: { companyId: 'company-a' },
+      query: { companyId: 'company-b' },
+    } as unknown as AuthenticatedRequest;
+    const dto = { notes: null };
+    const updated = { id: 'equipment-a', notes: null };
+    equipmentService.update.mockResolvedValue(updated);
+    await expect(
+      equipmentController.update(request, 'equipment-a', dto),
+    ).resolves.toBe(updated);
+    expect(equipmentService.update).toHaveBeenCalledWith(
+      'company-a',
+      'equipment-a',
+      dto,
     );
   });
 

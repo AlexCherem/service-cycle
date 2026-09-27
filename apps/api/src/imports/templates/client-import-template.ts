@@ -106,6 +106,8 @@ export const createClientImportTemplate = async (): Promise<Buffer> => {
 
   worksheet.getColumn('phone').numFmt = '@';
   worksheet.getColumn('serialNumber').numFmt = '@';
+  worksheet.getCell('H1').note =
+    'Обязателен для импорта. Повторная загрузка обновляет оборудование по телефону клиента и серийному номеру. Номер хранится как текст, включая начальные нули.';
   worksheet.getColumn('installationDate').numFmt = 'dd.mm.yyyy';
   worksheet.getColumn('lastServiceDate').numFmt = 'dd.mm.yyyy';
   worksheet.getColumn('nextServiceDate').numFmt = 'dd.mm.yyyy';

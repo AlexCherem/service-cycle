@@ -8,5 +8,7 @@
 
 export * from './equipmentClientDto';
 export * from './equipmentControllerFindAllV1Params';
+export * from './equipmentDetailsResponseDto';
 export * from './equipmentListItemDto';
 export * from './listEquipmentResponseDto';
+export * from './updateEquipmentDto';

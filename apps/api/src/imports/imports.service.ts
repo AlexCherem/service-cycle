@@ -9,6 +9,7 @@ import { PrismaService } from '../database/prisma/prisma.service';
 import { ClientImportParser } from './parsers/client-import.parser';
 import { createClientImportTemplate } from './templates/client-import-template';
 import { createFileHash } from './utils/file-hash';
+import { validateEquipmentMatches } from './utils/validate-equipment-matches';
 import { ClientImportWriter } from './writers/client-import.writer';
 
 @Injectable()
@@ -29,7 +30,7 @@ export class ImportsService {
     await this.ensureCompanyExists(companyId);
 
     const fileHash = createFileHash(fileBuffer);
-    const preview = await this.clientImportParser.parse(fileBuffer);
+    const preview = await this.preparePreview(companyId, fileBuffer);
 
     return {
       fileHash,
@@ -46,7 +47,7 @@ export class ImportsService {
 
     const fileHash = this.ensureFileMatchesPreview(fileBuffer, previewHash);
 
-    const preview = await this.clientImportParser.parse(fileBuffer);
+    const preview = await this.preparePreview(companyId, fileBuffer);
     const validRows = preview.rows.filter((row) => row.isValid);
 
     if (validRows.length === 0) {
@@ -63,6 +64,22 @@ export class ImportsService {
       importedRowCount: validRows.length,
       skippedRowCount: preview.invalidRowCount,
       ...writeResult,
+    };
+  }
+
+  private async preparePreview(companyId: string, fileBuffer: Buffer) {
+    const preview = await this.clientImportParser.parse(fileBuffer);
+    const rows = await validateEquipmentMatches(
+      this.prisma,
+      companyId,
+      preview.rows,
+    );
+    const validRowCount = rows.filter((row) => row.isValid).length;
+    return {
+      ...preview,
+      rows,
+      validRowCount,
+      invalidRowCount: rows.length - validRowCount,
     };
   }
 

@@ -13,6 +13,24 @@ export interface ImportClientDataDto {
   email: string | null;
   equipment: string;
   /** @nullable */
+  type: string | null;
+  /** @nullable */
+  manufacturer: string | null;
+  /** @nullable */
+  model: string | null;
+  /**
+   * Обязателен для импорта. Используется для сопоставления оборудования в пределах клиента; строки без номера требуют уточнения.
+   * @nullable
+   */
+  serialNumber: string | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  serviceIntervalMonths: number | null;
+  /** @nullable */
+  notes: string | null;
+  /** @nullable */
   installationDate: string | null;
   /** @nullable */
   lastServiceDate: string | null;

@@ -13,6 +13,18 @@ export interface ImportDetectedColumnsDto {
   email: string | null;
   equipment: string;
   /** @nullable */
+  type: string | null;
+  /** @nullable */
+  manufacturer: string | null;
+  /** @nullable */
+  model: string | null;
+  /** @nullable */
+  serialNumber: string | null;
+  /** @nullable */
+  serviceIntervalMonths: string | null;
+  /** @nullable */
+  notes: string | null;
+  /** @nullable */
   installationDate: string | null;
   /** @nullable */
   lastServiceDate: string | null;

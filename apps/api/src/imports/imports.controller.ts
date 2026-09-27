@@ -151,7 +151,8 @@ export class ImportsController {
     type: ImportErrorDto,
   })
   @ApiConflictResponse({
-    description: 'Файл отличается от проверенного через preview',
+    description:
+      'Файл или данные оборудования изменились; требуется повторный предпросмотр или импорт',
     type: ImportErrorDto,
   })
   @ApiConsumes('multipart/form-data')
