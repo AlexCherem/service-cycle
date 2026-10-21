@@ -1,6 +1,7 @@
 .container {
   display: flex;
-  max-width: 760px;
+  width: 100%;
+  min-width: 0;
   flex-direction: column;
   gap: 24px;
   padding: 24px;
@@ -70,4 +71,20 @@
   .actions :global(.ant-btn) {
     width: 100%;
   }
+}
+
+.fileUpload:global(.ant-upload-wrapper)
+  :global(
+    .ant-upload-list
+      .ant-upload-list-item
+      .ant-upload-list-item-actions
+      .ant-upload-list-item-action
+  ) {
+  opacity: 1;
+}
+
+.fileUpload:global(.ant-upload-wrapper)
+  :global(.ant-upload-list .ant-upload-list-item .ant-upload-list-item-name) {
+  flex: 0 1 auto;
+  min-width: 0;
 }

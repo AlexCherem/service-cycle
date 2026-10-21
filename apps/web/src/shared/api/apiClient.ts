@@ -2,6 +2,7 @@ type ApiRequestOptions = Omit<RequestInit, 'body'> & {
   body?: BodyInit;
   json?: unknown;
   skipAuthRefresh?: boolean;
+  responseType?: 'json' | 'blob';
 };
 
 const REFRESH_PATH = '/api/v1/auth/refresh';
@@ -22,7 +23,11 @@ export async function apiRequest<TResponse>(
   path: string,
   options: ApiRequestOptions = {},
 ): Promise<TResponse> {
-  const { skipAuthRefresh = false, ...requestOptions } = options;
+  const {
+    skipAuthRefresh = false,
+    responseType = 'json',
+    ...requestOptions
+  } = options;
   let response = await sendRequest(path, requestOptions);
 
   if (response.status === 401 && !skipAuthRefresh) {
@@ -41,7 +46,9 @@ export async function apiRequest<TResponse>(
     return undefined as TResponse;
   }
 
-  return response.json() as Promise<TResponse>;
+  return (
+    responseType === 'blob' ? response.blob() : response.json()
+  ) as Promise<TResponse>;
 }
 
 async function sendRequest(

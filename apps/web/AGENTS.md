@@ -7,3 +7,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Переиспользование frontend-кода
+
+- Перед созданием нового helper, hook или общего UI-компонента проверь существующие реализации в `apps/web/src/shared` и затрагиваемом модуле. Переиспользуй подходящую реализацию.
+- Бизнес-логику оставляй в соответствующем модуле; не переноси код в `shared` только ради устранения внешне похожих фрагментов.
