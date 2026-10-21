@@ -1,8 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import ExcelJS from 'exceljs';
 
+import { normalizeBelarusPhone } from '../../common/utils/normalize-belarus-phone';
 import { getEquipmentDateErrors } from '../../equipment/utils/get-equipment-date-errors';
-import { normalizeBelarusPhone, parseExcelDate } from './import-value.parsers';
+import { parseExcelDate } from './import-value.parsers';
 
 const readCellText = (cell: ExcelJS.Cell): string => {
   const text: unknown = cell.text;

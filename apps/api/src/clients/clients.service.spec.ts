@@ -1,7 +1,8 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../database/prisma/prisma.service';
 import { EquipmentServiceStatus } from '../equipment/dto/equipment-service-status.enum';
+import { Prisma } from '../generated/prisma/client';
 import { ClientsService } from './clients.service';
 
 type PrismaMock = {
@@ -12,6 +13,7 @@ type PrismaMock = {
     findFirst: jest.Mock;
     findMany: jest.Mock;
     count: jest.Mock;
+    update: jest.Mock;
   };
   $transaction: jest.Mock;
 };
@@ -32,6 +34,7 @@ describe('ClientsService', () => {
         findFirst: jest.fn(),
         findMany: jest.fn(),
         count: jest.fn(),
+        update: jest.fn(),
       },
       $transaction: jest.fn(),
     };
@@ -41,6 +44,125 @@ describe('ClientsService', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+  });
+
+  describe('update', () => {
+    it('updates a client within the company and returns its details', async () => {
+      const companyId = '7cfad2ad-8c32-4614-bd68-4882d7998655';
+      const clientId = '8810c8d6-67ee-49bd-82c8-4cd4865e9ac5';
+
+      const dto = {
+        name: 'Иван Петров',
+        phone: '+375291234567',
+        email: 'ivan@example.com',
+      };
+
+      const client = {
+        id: clientId,
+        ...dto,
+        equipment: [],
+      };
+
+      prisma.client.update.mockResolvedValue({ id: clientId });
+      prisma.client.findFirst.mockResolvedValue(client);
+
+      const result = await clientsService.update(companyId, clientId, dto);
+
+      expect(prisma.client.update).toHaveBeenCalledWith({
+        where: {
+          id: clientId,
+          companyId,
+        },
+        data: dto,
+        select: {
+          id: true,
+        },
+      });
+
+      expect(prisma.client.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            id: clientId,
+            companyId,
+          },
+        }),
+      );
+
+      expect(result).toEqual(client);
+    });
+
+    it.each([
+      {
+        dto: { name: 'Новое имя' },
+        data: { name: 'Новое имя', phone: undefined, email: undefined },
+      },
+      {
+        dto: { phone: null, email: null },
+        data: { name: undefined, phone: null, email: null },
+      },
+    ])(
+      'preserves omitted fields and explicit null: %j',
+      async ({ dto, data }) => {
+        const companyId = '7cfad2ad-8c32-4614-bd68-4882d7998655';
+        const clientId = '8810c8d6-67ee-49bd-82c8-4cd4865e9ac5';
+        prisma.client.update.mockResolvedValue({ id: clientId });
+        prisma.client.findFirst.mockResolvedValue({
+          id: clientId,
+          name: 'Новое имя',
+          phone: null,
+          email: null,
+          equipment: [],
+        });
+
+        await clientsService.update(companyId, clientId, dto);
+
+        expect(prisma.client.update).toHaveBeenCalledWith({
+          where: { id: clientId, companyId },
+          data,
+          select: { id: true },
+        });
+      },
+    );
+
+    it.each([
+      new Error('Connection lost'),
+      new Prisma.PrismaClientKnownRequestError('Unexpected database error', {
+        code: 'P2024',
+        clientVersion: 'test',
+      }),
+    ])('rethrows unexpected errors without reading details', async (error) => {
+      prisma.client.update.mockRejectedValue(error);
+      await expect(
+        clientsService.update('company-a', 'client-a', { name: 'Иван' }),
+      ).rejects.toBe(error);
+      expect(prisma.client.findFirst).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      { code: 'P2025', exception: NotFoundException },
+      { code: 'P2002', exception: ConflictException },
+    ])(
+      'maps Prisma error $code to an HTTP exception',
+      async ({ code, exception }) => {
+        const companyId = '7cfad2ad-8c32-4614-bd68-4882d7998655';
+        const clientId = '8810c8d6-67ee-49bd-82c8-4cd4865e9ac5';
+
+        prisma.client.update.mockRejectedValue(
+          new Prisma.PrismaClientKnownRequestError('Database error', {
+            code,
+            clientVersion: 'test',
+          }),
+        );
+
+        await expect(
+          clientsService.update(companyId, clientId, {
+            phone: '+375291234567',
+          }),
+        ).rejects.toBeInstanceOf(exception);
+
+        expect(prisma.client.findFirst).not.toHaveBeenCalled();
+      },
+    );
   });
 
   describe('findAll', () => {
