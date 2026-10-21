@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { PrismaService } from '../database/prisma/prisma.service';
 import {
@@ -6,12 +10,13 @@ import {
   createEquipmentServiceStatusWhere,
   getBusinessToday,
 } from '../equipment/utils/calculate-equipment-service-status';
-import type { Prisma } from '../generated/prisma/client';
+import { Prisma } from '../generated/prisma/client';
 import { ListClientsQueryDto } from './dto/list-clients-query.dto';
 import {
   ClientListItemDto,
   ListClientsResponseDto,
 } from './dto/list-clients-response.dto';
+import { UpdateClientDto } from './dto/update-client.dto';
 
 const toDateOnly = (value: Date | null): string | null => {
   return value ? value.toISOString().slice(0, 10) : null;
@@ -68,6 +73,45 @@ export class ClientsService {
         status: calculateEquipmentServiceStatus(item.nextServiceDate, today),
       })),
     };
+  }
+
+  async update(
+    companyId: string,
+    clientId: string,
+    dto: UpdateClientDto,
+  ): Promise<ClientListItemDto> {
+    try {
+      await this.prisma.client.update({
+        where: {
+          id: clientId,
+          companyId,
+        },
+        data: {
+          name: dto.name,
+          phone: dto.phone,
+          email: dto.email,
+        },
+        select: {
+          id: true,
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          throw new NotFoundException('Клиент не найден');
+        }
+
+        if (error.code === 'P2002') {
+          throw new ConflictException(
+            'Клиент с таким телефоном уже существует в компании',
+          );
+        }
+      }
+
+      throw error;
+    }
+
+    return this.findOne(companyId, clientId);
   }
 
   async findAll(

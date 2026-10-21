@@ -1,14 +1,17 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiConflictResponse,
   ApiCookieAuth,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -26,6 +29,7 @@ import {
   ClientListItemDto,
   ListClientsResponseDto,
 } from './dto/list-clients-response.dto';
+import { UpdateClientDto } from './dto/update-client.dto';
 
 @ApiTags('clients')
 @Controller()
@@ -77,5 +81,35 @@ export class ClientsController {
     @Param('clientId', ParseUUIDPipe) clientId: string,
   ): Promise<ClientListItemDto> {
     return this.clientsService.findOne(request.user.companyId, clientId);
+  }
+
+  @Patch('clients/:clientId')
+  @UseGuards(AccessTokenGuard)
+  @ApiCookieAuth(ACCESS_TOKEN_COOKIE_NAME)
+  @ApiOperation({
+    summary: 'Частично обновить клиента',
+  })
+  @ApiOkResponse({
+    description: 'Обновлённая карточка клиента с оборудованием',
+    type: ClientListItemDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Некорректный идентификатор или данные клиента',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Access token отсутствует или недействителен',
+  })
+  @ApiNotFoundResponse({
+    description: 'Клиент не найден',
+  })
+  @ApiConflictResponse({
+    description: 'Телефон уже занят другим клиентом компании',
+  })
+  update(
+    @Req() request: AuthenticatedRequest,
+    @Param('clientId', ParseUUIDPipe) clientId: string,
+    @Body() dto: UpdateClientDto,
+  ): Promise<ClientListItemDto> {
+    return this.clientsService.update(request.user.companyId, clientId, dto);
   }
 }
