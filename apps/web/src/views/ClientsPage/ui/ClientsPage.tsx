@@ -1,3 +1,4 @@
+import { ClientsTable } from '@/widgets/ClientsTable';
 import { ButtonLink } from '@/shared/ui/ButtonLink';
 
 import styles from './ClientsPage.module.css';
@@ -19,18 +20,7 @@ export function ClientsPage() {
         </ButtonLink>
       </header>
 
-      <div className={styles.emptyState}>
-        <h2 className={styles.emptyStateTitle}>Клиентов пока нет</h2>
-
-        <p className={styles.emptyStateDescription}>
-          Импортируйте существующую клиентскую базу из Excel-файла, чтобы начать
-          работу.
-        </p>
-
-        <ButtonLink href="/clients/import" type="primary">
-          Импортировать базу
-        </ButtonLink>
-      </div>
+      <ClientsTable />
     </section>
   );
 }

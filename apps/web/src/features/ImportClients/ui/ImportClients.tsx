@@ -1,102 +1,104 @@
 'use client';
 
-import { useState } from 'react';
+import { Alert, Button, Space, Steps } from 'antd';
 
-import { InboxOutlined } from '@ant-design/icons';
-import type { UploadFile, UploadProps } from 'antd';
-import { Button, message, Upload } from 'antd';
-
+import { getApiErrorMessage } from '@/shared/api/getApiErrorMessage';
 import { ButtonLink } from '@/shared/ui/ButtonLink';
+
+import { useClientsImport } from '../model/useClientsImport';
+import { ImportFileUpload } from './ImportFileUpload';
+import { ImportPreview } from './ImportPreview';
+import { ImportResult } from './ImportResult';
 
 import styles from './ImportClients.module.css';
 
-const ACCEPTED_FILE_EXTENSION = '.xlsx';
-const MAX_EXCEL_FILE_SIZE = 10 * 1024 * 1024;
-
 export function ImportClients() {
-  const [fileList, setFileList] = useState<UploadFile[]>([]);
-
-  const uploadProps: UploadProps = {
-    accept: ACCEPTED_FILE_EXTENSION,
-    beforeUpload: (file) => {
-      const isExcelFile = file.name.toLowerCase().endsWith('.xlsx');
-      if (!isExcelFile) {
-        void message.error('Выберите Excel-файл в формате .xlsx');
-        return Upload.LIST_IGNORE;
-      }
-      const isFileSizeValid = file.size <= MAX_EXCEL_FILE_SIZE;
-
-      if (!isFileSizeValid) {
-        void message.error('Размер файла не должен превышать 10 МБ');
-        return Upload.LIST_IGNORE;
-      }
-
-      return false;
-    },
+  const {
+    companyId,
     fileList,
-    maxCount: 1,
-    onChange: ({ fileList: nextFileList }) => {
-      setFileList(nextFileList.slice(-1));
-    },
-    onRemove: () => {
-      setFileList([]);
-    },
-  };
+    fileError,
+    skipConfirmed,
+    setSkipConfirmed,
+    previewMutation,
+    importMutation,
+    templateMutation,
+    preview,
+    result,
+    busy,
+    conflict,
+    uploadProps,
+    checkFile,
+    confirmImport,
+    restartImport,
+    canImport,
+  } = useClientsImport();
 
-  function handleImport() {
-    const selectedFile = fileList[0]?.originFileObj;
-
-    if (!selectedFile) {
-      void message.warning('Сначала выберите файл');
-      return;
-    }
-
-    console.log('Выбран файл для импорта:', selectedFile);
-  }
+  if (result) return <ImportResult result={result} onRestart={restartImport} />;
 
   return (
     <div className={styles.container}>
-      <Upload.Dragger {...uploadProps}>
-        <p className={styles.uploadIcon}>
-          <InboxOutlined />
-        </p>
-
-        <p className={styles.uploadTitle}>Нажмите или перетащите Excel-файл</p>
-
-        <p className={styles.uploadDescription}>
-          Поддерживается один файл в формате .xlsx
-        </p>
-      </Upload.Dragger>
-
-      <div className={styles.requirements}>
-        <h2 className={styles.requirementsTitle}>Требования к файлу</h2>
-
-        <ul className={styles.requirementsList}>
-          <li>Формат файла: .xlsx</li>
-          <li>Максимальный размер: 10 МБ</li>
-          <li>Первая строка должна содержать названия колонок</li>
-          <li>
-            Каждая строка должна содержать данные одного клиента и одной единицы
-            оборудования
-          </li>
-          <li>
-            Если у клиента несколько единиц оборудования, добавьте отдельную
-            строку для каждой единицы
-          </li>
-        </ul>
-      </div>
-
-      <div className={styles.actions}>
-        <ButtonLink href="/clients">Отмена</ButtonLink>
-
+      <Steps
+        current={preview ? 1 : 0}
+        items={[
+          { title: 'Выбор файла' },
+          { title: 'Проверка и подтверждение' },
+          { title: 'Результат' },
+        ]}
+      />
+      <ImportFileUpload
+        uploadProps={uploadProps}
+        templateLoading={templateMutation.isPending}
+        disabled={!companyId}
+        templateError={templateMutation.error}
+        onDownloadTemplate={() => templateMutation.mutate()}
+      />
+      {fileError && <Alert type="error" showIcon title={fileError} />}
+      {previewMutation.isError && (
+        <Alert
+          type="error"
+          showIcon
+          title={getApiErrorMessage(
+            previewMutation.error,
+            'Не удалось проверить файл. Попробуйте ещё раз.',
+          )}
+        />
+      )}
+      {importMutation.isError && (
+        <Alert
+          type="error"
+          showIcon
+          title={getApiErrorMessage(
+            importMutation.error,
+            'Не удалось выполнить импорт. Попробуйте ещё раз.',
+          )}
+          description={
+            conflict
+              ? 'Выполните проверку файла заново перед подтверждением.'
+              : undefined
+          }
+        />
+      )}
+      <Space wrap>
         <Button
-          disabled={fileList.length === 0}
-          onClick={handleImport}
-          type="primary"
+          loading={previewMutation.isPending}
+          disabled={!companyId || !fileList.length || importMutation.isPending}
+          onClick={checkFile}
         >
-          Импортировать
+          {preview ? 'Проверить заново' : 'Проверить файл'}
         </Button>
-      </div>
+        {!busy && <ButtonLink href="/clients">Отмена</ButtonLink>}
+      </Space>
+      {preview && !previewMutation.isPending && (
+        <ImportPreview
+          preview={preview}
+          skipConfirmed={skipConfirmed}
+          disabled={busy}
+          importing={importMutation.isPending}
+          canImport={canImport}
+          onSkipConfirmedChange={setSkipConfirmed}
+          onConfirm={confirmImport}
+        />
+      )}
     </div>
   );
 }
