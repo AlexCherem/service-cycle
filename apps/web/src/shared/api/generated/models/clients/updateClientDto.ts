@@ -15,9 +15,12 @@ export interface UpdateClientDto {
    * @nullable
    */
   email?: string | null;
+  /** Телефон клиента. Приводится к формату +375XXXXXXXXX. Не может быть пустым или null. */
+  phone?: string;
   /**
-   * Телефон клиента. Приводится к формату +375XXXXXXXXX. Передайте null, чтобы очистить.
+   * Примечание о клиенте. Передайте null, чтобы очистить.
+   * @maxLength 300
    * @nullable
    */
-  phone?: string | null;
+  notes?: string | null;
 }

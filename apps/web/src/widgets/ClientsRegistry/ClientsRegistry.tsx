@@ -13,11 +13,11 @@ import type {
 } from '@/shared/api/generated/models';
 
 import { clientsColumns } from './config/clientsColumns';
-import { ClientDrawer } from './ui/ClientDrawer';
-import { ClientsEmptyState } from './ui/ClientsEmptyState';
-import { ClientsFilters } from './ui/ClientsFilters';
+import { ClientDrawer } from './ui/ClientDrawer/ClientDrawer';
+import { ClientsEmptyState } from './ui/ClientsEmptyState/ClientsEmptyState';
+import { ClientsFilters } from './ui/ClientsFilters/ClientsFilters';
 
-export function ClientsTable() {
+export function ClientsRegistry() {
   const { data: user } = useQuery(currentUserQueryOptions);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<EquipmentServiceStatus>();
@@ -85,6 +85,7 @@ export function ClientsTable() {
         />
       )}
       <ClientDrawer
+        key={`${companyId}:${selectedClientId ?? ''}`}
         companyId={companyId}
         clientId={selectedClientId}
         onClose={() => setSelectedClientId(null)}

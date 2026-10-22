@@ -55,6 +55,7 @@ describe('ClientsService', () => {
         name: 'Иван Петров',
         phone: '+375291234567',
         email: 'ivan@example.com',
+        notes: 'Перед визитом позвонить.',
       };
 
       const client = {
@@ -94,27 +95,59 @@ describe('ClientsService', () => {
     it.each([
       {
         dto: { name: 'Новое имя' },
-        data: { name: 'Новое имя', phone: undefined, email: undefined },
+        data: {
+          name: 'Новое имя',
+          phone: undefined,
+          email: undefined,
+          notes: undefined,
+        },
       },
       {
-        dto: { phone: null, email: null },
-        data: { name: undefined, phone: null, email: null },
+        dto: { email: null },
+        data: {
+          name: undefined,
+          phone: undefined,
+          email: null,
+          notes: undefined,
+        },
+      },
+      {
+        dto: { notes: null },
+        data: {
+          name: undefined,
+          phone: undefined,
+          email: undefined,
+          notes: null,
+        },
+      },
+      {
+        dto: { notes: 'Новое примечание' },
+        data: {
+          name: undefined,
+          phone: undefined,
+          email: undefined,
+          notes: 'Новое примечание',
+        },
       },
     ])(
       'preserves omitted fields and explicit null: %j',
       async ({ dto, data }) => {
         const companyId = '7cfad2ad-8c32-4614-bd68-4882d7998655';
         const clientId = '8810c8d6-67ee-49bd-82c8-4cd4865e9ac5';
+        const notes = 'notes' in dto ? dto.notes : 'Существующее примечание';
         prisma.client.update.mockResolvedValue({ id: clientId });
         prisma.client.findFirst.mockResolvedValue({
           id: clientId,
           name: 'Новое имя',
           phone: null,
           email: null,
+          notes,
           equipment: [],
         });
 
-        await clientsService.update(companyId, clientId, dto);
+        const result = await clientsService.update(companyId, clientId, dto);
+
+        expect(result.notes).toBe(notes);
 
         expect(prisma.client.update).toHaveBeenCalledWith({
           where: { id: clientId, companyId },
@@ -201,6 +234,7 @@ describe('ClientsService', () => {
           name: 'Иван Иванов',
           phone: '+375291234567',
           email: 'ivan@example.com',
+          notes: 'Перед визитом позвонить.',
           equipment: [
             {
               id: '960ae682-3486-4fd5-8709-76b650582f84',
@@ -248,6 +282,7 @@ describe('ClientsService', () => {
             name: 'Иван Иванов',
             phone: '+375291234567',
             email: 'ivan@example.com',
+            notes: 'Перед визитом позвонить.',
             equipment: [
               {
                 id: '960ae682-3486-4fd5-8709-76b650582f84',
@@ -349,6 +384,7 @@ describe('ClientsService', () => {
             name: true,
             phone: true,
             email: true,
+            notes: true,
             equipment: {
               where: equipmentWhere,
               select: {
@@ -433,6 +469,7 @@ describe('ClientsService', () => {
         name: 'Иван Иванов',
         phone: '+375291234567',
         email: 'ivan@example.com',
+        notes: 'Перед визитом позвонить.',
         equipment: [
           {
             id: '960ae682-3486-4fd5-8709-76b650582f84',
@@ -456,6 +493,7 @@ describe('ClientsService', () => {
           name: true,
           phone: true,
           email: true,
+          notes: true,
           equipment: {
             select: {
               id: true,
@@ -474,6 +512,7 @@ describe('ClientsService', () => {
         name: 'Иван Иванов',
         phone: '+375291234567',
         email: 'ivan@example.com',
+        notes: 'Перед визитом позвонить.',
         equipment: [
           {
             id: '960ae682-3486-4fd5-8709-76b650582f84',

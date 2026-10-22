@@ -1,4 +1,4 @@
-import { ClientsTable } from '@/widgets/ClientsTable';
+import { ClientsRegistry } from '@/widgets/ClientsRegistry';
 import { ButtonLink } from '@/shared/ui/ButtonLink';
 
 import styles from './ClientsPage.module.css';
@@ -20,7 +20,7 @@ export function ClientsPage() {
         </ButtonLink>
       </header>
 
-      <ClientsTable />
+      <ClientsRegistry />
     </section>
   );
 }

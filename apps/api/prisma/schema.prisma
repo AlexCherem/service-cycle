@@ -56,6 +56,7 @@ model Client {
   equipment Equipment[]
   createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  notes     String?     @db.VarChar(300)
 
   @@unique([companyId, phone], map: "clients_company_id_phone_key")
   @@map("clients")
