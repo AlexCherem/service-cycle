@@ -44,20 +44,36 @@ export class UpdateClientDto {
 
   @ApiPropertyOptional({
     type: String,
-    nullable: true,
     example: '+375291234567',
     description:
-      'Телефон клиента. Приводится к формату +375XXXXXXXXX. Передайте null, чтобы очистить.',
+      'Телефон клиента. Приводится к формату +375XXXXXXXXX. Не может быть пустым или null.',
   })
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string'
       ? (normalizeBelarusPhone(value) ?? value.trim())
       : value,
   )
-  @IsOptional()
+  @ValidateIf((_object: unknown, value: unknown) => value !== undefined)
   @IsString()
   @Matches(/^\+375\d{9}$/, {
     message: 'Укажите корректный белорусский номер телефона',
   })
-  phone?: string | null;
+  phone?: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    maxLength: 300,
+    example: 'Перед визитом позвонить за час.',
+    description: 'Примечание о клиенте. Передайте null, чтобы очистить.',
+  })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  @IsOptional()
+  @IsString()
+  @MaxLength(300, {
+    message: 'Примечание не должно превышать 300 символов',
+  })
+  notes?: string | null;
 }

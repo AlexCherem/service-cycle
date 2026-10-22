@@ -62,6 +62,14 @@ export class ClientListItemDto {
   })
   email!: string | null;
 
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    maxLength: 300,
+    example: 'Перед визитом позвонить за час.',
+  })
+  notes!: string | null;
+
   @ApiProperty({ type: () => [ClientEquipmentListItemDto] })
   equipment!: ClientEquipmentListItemDto[];
 }

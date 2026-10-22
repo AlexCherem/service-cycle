@@ -40,6 +40,7 @@ export class ClientsService {
         name: true,
         phone: true,
         email: true,
+        notes: true,
         equipment: {
           select: {
             id: true,
@@ -64,6 +65,7 @@ export class ClientsService {
       name: client.name,
       phone: client.phone,
       email: client.email,
+      notes: client.notes,
       equipment: client.equipment.map((item) => ({
         id: item.id,
         name: item.name,
@@ -90,6 +92,7 @@ export class ClientsService {
           name: dto.name,
           phone: dto.phone,
           email: dto.email,
+          notes: dto.notes,
         },
         select: {
           id: true,
@@ -169,6 +172,7 @@ export class ClientsService {
           name: true,
           phone: true,
           email: true,
+          notes: true,
           equipment: {
             ...(equipmentWhere
               ? {
@@ -200,6 +204,7 @@ export class ClientsService {
         name: client.name,
         phone: client.phone,
         email: client.email,
+        notes: client.notes,
         equipment: client.equipment.map((item) => ({
           id: item.id,
           name: item.name,

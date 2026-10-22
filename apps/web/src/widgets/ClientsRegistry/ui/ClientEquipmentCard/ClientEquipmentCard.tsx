@@ -3,7 +3,7 @@ import { Descriptions, Tag } from 'antd';
 import type { ClientEquipmentListItemDto } from '@/shared/api/generated/models';
 import { dateLabel } from '@/shared/lib/date/dateLabel';
 
-import { equipmentServiceStatuses } from '../config/equipmentServiceStatuses';
+import { equipmentServiceStatuses } from '../../config/equipmentServiceStatuses';
 
 export function ClientEquipmentCard({
   equipment,
@@ -11,7 +11,7 @@ export function ClientEquipmentCard({
   equipment: ClientEquipmentListItemDto;
 }) {
   return (
-    <div style={{ padding: '16px 0', borderBottom: '1px solid #e2e8f0' }}>
+    <div style={{ paddingBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
       <strong>{equipment.name}</strong>{' '}
       <Tag color={equipmentServiceStatuses[equipment.status].color}>
         {equipmentServiceStatuses[equipment.status].label}

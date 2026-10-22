@@ -3,7 +3,7 @@ import { Select } from 'antd';
 import type { EquipmentServiceStatus } from '@/shared/api/generated/models';
 import { SearchInput } from '@/shared/ui/SearchInput';
 
-import { equipmentServiceStatuses } from '../config/equipmentServiceStatuses';
+import { equipmentServiceStatuses } from '../../config/equipmentServiceStatuses';
 
 import styles from './ClientsFilters.module.css';
 

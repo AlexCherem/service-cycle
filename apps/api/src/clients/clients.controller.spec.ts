@@ -67,6 +67,7 @@ describe('ClientsController PATCH (HTTP)', () => {
       name: 'Иван',
       phone: null,
       email: null,
+      notes: 'Существующее примечание',
       equipment: [
         {
           id: '960ae682-3486-4fd5-8709-76b650582f84',
@@ -110,16 +111,91 @@ describe('ClientsController PATCH (HTTP)', () => {
     );
   });
 
-  it('passes null contacts through without changing an omitted name', async () => {
+  it('clears email without changing omitted name and phone', async () => {
     await request(app.getHttpServer())
       .patch(path)
       .set('Cookie', authCookie)
-      .send({ phone: null, email: null })
+      .send({ email: null })
       .expect(200);
+
     expect(prisma.client.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: { name: undefined, phone: null, email: null },
+        data: { name: undefined, phone: undefined, email: null },
       }),
+    );
+  });
+
+  it('returns notes in the client details', async () => {
+    await request(app.getHttpServer())
+      .get(path)
+      .set('Cookie', authCookie)
+      .expect(200)
+      .expect(({ body }: { body: { notes: string } }) => {
+        expect(body.notes).toBe('Существующее примечание');
+      });
+
+    expect(prisma.client.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: clientId, companyId },
+      }),
+    );
+    expect(prisma.client.findFirst.mock.calls[0]).toHaveProperty(
+      '0.select.notes',
+      true,
+    );
+  });
+
+  it.each([
+    {
+      input: '  Перед визитом позвонить.\nКод: AbC.  ',
+      notes: 'Перед визитом позвонить.\nКод: AbC.',
+    },
+    { input: 'а'.repeat(300), notes: 'а'.repeat(300) },
+    { input: null, notes: null },
+  ])('saves and returns notes: %j', async ({ input, notes }) => {
+    prisma.client.findFirst.mockResolvedValueOnce({
+      id: clientId,
+      name: 'Иван',
+      phone: '+375291234567',
+      email: null,
+      notes,
+      equipment: [],
+    });
+
+    await request(app.getHttpServer())
+      .patch(path)
+      .set('Cookie', authCookie)
+      .send({ notes: input })
+      .expect(200)
+      .expect(({ body }: { body: { notes: string | null } }) => {
+        expect(body.notes).toBe(notes);
+      });
+
+    expect(prisma.client.update).toHaveBeenCalledWith({
+      where: { id: clientId, companyId },
+      data: { name: undefined, phone: undefined, email: undefined, notes },
+      select: { id: true },
+    });
+  });
+
+  it('does not write notes when omitted from PATCH', async () => {
+    await request(app.getHttpServer())
+      .patch(path)
+      .set('Cookie', authCookie)
+      .send({ name: 'Новое имя' })
+      .expect(200)
+      .expect(({ body }: { body: { notes: string } }) => {
+        expect(body.notes).toBe('Существующее примечание');
+      });
+
+    expect(prisma.client.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: clientId, companyId },
+      }),
+    );
+    expect(prisma.client.update.mock.calls[0]).toHaveProperty(
+      '0.data.notes',
+      undefined,
     );
   });
 
@@ -158,8 +234,14 @@ describe('ClientsController PATCH (HTTP)', () => {
   it.each([
     { name: null },
     { phone: '123' },
+    { phone: null },
+    { phone: '' },
+    { phone: '   ' },
     { email: '' },
     { companyId: 'company-b' },
+    { notes: 'а'.repeat(301) },
+    { notes: 123 },
+    { notes: {} },
   ])(
     'rejects invalid or forbidden body before touching the database: %j',
     async (body) => {
@@ -214,7 +296,7 @@ describe('ClientsController PATCH (HTTP)', () => {
     },
   );
 
-  it('publishes a protected PATCH route and nullable optional contacts in OpenAPI', () => {
+  it('publishes a protected PATCH route with optional fields and nullable email', () => {
     const document = SwaggerModule.createDocument(
       app,
       new DocumentBuilder()
@@ -231,8 +313,17 @@ describe('ClientsController PATCH (HTTP)', () => {
       expect(operation?.responses).toHaveProperty(status);
     }
     const schema = document.components?.schemas?.UpdateClientDto;
-    expect(schema).toHaveProperty('properties.phone.nullable', true);
+    expect(schema).not.toHaveProperty('properties.phone.nullable', true);
     expect(schema).toHaveProperty('properties.email.nullable', true);
+    expect(schema).toHaveProperty('properties.notes.nullable', true);
+    expect(schema).toHaveProperty('properties.notes.maxLength', 300);
     expect(schema).not.toHaveProperty('required');
+    const responseSchema = document.components?.schemas?.ClientListItemDto;
+    expect(responseSchema).toHaveProperty('properties.notes.nullable', true);
+    expect(responseSchema).toHaveProperty('properties.notes.maxLength', 300);
+    expect(responseSchema).toHaveProperty(
+      'required',
+      expect.arrayContaining(['notes']),
+    );
   });
 });

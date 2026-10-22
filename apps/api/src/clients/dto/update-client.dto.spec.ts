@@ -29,17 +29,43 @@ describe('UpdateClientDto', () => {
     });
   });
 
-  it('leaves omitted fields undefined and preserves explicit null', async () => {
+  it('leaves omitted fields undefined and allows clearing email', async () => {
     const omitted = await validate({});
 
     expect(omitted.name).toBeUndefined();
     expect(omitted.email).toBeUndefined();
     expect(omitted.phone).toBeUndefined();
+    expect(omitted.notes).toBeUndefined();
 
-    const cleared = await validate({ email: null, phone: null });
+    const cleared = await validate({ email: null });
 
     expect(cleared.email).toBeNull();
-    expect(cleared.phone).toBeNull();
+    expect(cleared.phone).toBeUndefined();
+  });
+
+  it('allows clearing notes with null', async () => {
+    expect((await validate({ notes: null })).notes).toBeNull();
+  });
+
+  it('trims notes while preserving line breaks and letter case', async () => {
+    const result = await validate({
+      notes: '  Перед визитом позвонить.\nКод: AbC-123.  ',
+    });
+
+    expect(result.notes).toBe('Перед визитом позвонить.\nКод: AbC-123.');
+  });
+
+  it.each(['', '   '])(
+    'allows empty notes after trimming: %j',
+    async (notes) => {
+      expect((await validate({ notes })).notes).toBe('');
+    },
+  );
+
+  it('accepts 300 characters after trimming', async () => {
+    const notes = 'а'.repeat(300);
+
+    expect((await validate({ notes: `  ${notes}  ` })).notes).toBe(notes);
   });
 
   it.each([
@@ -57,6 +83,12 @@ describe('UpdateClientDto', () => {
     { phone: '   ' },
     { phone: {} },
     { phone: 375291234567 },
+    { phone: null },
+    { notes: 'а'.repeat(301) },
+    { notes: 123 },
+    { notes: {} },
+    { notes: [] },
+    { notes: false },
     { companyId: 'another-company' },
     { id: 'another-client' },
     { equipment: [] },

@@ -14,5 +14,10 @@ export interface ClientListItemDto {
   phone: string | null;
   /** @nullable */
   email: string | null;
+  /**
+   * @maxLength 300
+   * @nullable
+   */
+  notes: string | null;
   equipment: ClientEquipmentListItemDto[];
 }
