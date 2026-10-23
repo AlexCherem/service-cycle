@@ -7,21 +7,21 @@ import type { UpdateClientDto } from '@/shared/api/generated/models';
 import { FormInput } from '@/shared/ui/FormInput';
 import { FormTextArea } from '@/shared/ui/FormTextArea';
 
-export type ClientFormProps = Pick<
-  FormProps<UpdateClientDto>,
-  'name' | 'disabled' | 'onFinish' | 'onValuesChange'
-> & {
-  form: FormInstance<UpdateClientDto>;
-  children?: ReactNode;
-};
+export type ClientFormProps<Values extends UpdateClientDto = UpdateClientDto> =
+  Pick<
+    FormProps<Values>,
+    'name' | 'disabled' | 'onFinish' | 'onValuesChange'
+  > & {
+    form: FormInstance<Values>;
+    children?: ReactNode;
+  };
 
-export function ClientForm({ children, ...formProps }: ClientFormProps) {
+export function ClientForm<Values extends UpdateClientDto = UpdateClientDto>({
+  children,
+  ...formProps
+}: ClientFormProps<Values>) {
   return (
-    <Form<UpdateClientDto>
-      {...formProps}
-      layout="vertical"
-      requiredMark={false}
-    >
+    <Form<Values> {...formProps} layout="vertical" requiredMark={false}>
       {children}
       <FormInput<UpdateClientDto>
         name="name"

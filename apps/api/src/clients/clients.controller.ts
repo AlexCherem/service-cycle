@@ -5,6 +5,7 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  Post,
   Query,
   Req,
   UseGuards,
@@ -13,6 +14,7 @@ import {
   ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCookieAuth,
+  ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -24,6 +26,7 @@ import { AccessTokenGuard } from '../auth/access-token.guard';
 import { ACCESS_TOKEN_COOKIE_NAME } from '../auth/auth.constants';
 import type { AuthenticatedRequest } from '../auth/authenticated-user.type';
 import { ClientsService } from './clients.service';
+import { CreateClientDto } from './dto/create-client.dto';
 import { ListClientsQueryDto } from './dto/list-clients-query.dto';
 import {
   ClientListItemDto,
@@ -35,6 +38,33 @@ import { UpdateClientDto } from './dto/update-client.dto';
 @Controller()
 export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
+
+  @Post('clients')
+  @UseGuards(AccessTokenGuard)
+  @ApiCookieAuth(ACCESS_TOKEN_COOKIE_NAME)
+  @ApiOperation({ summary: 'Создать клиента' })
+  @ApiCreatedResponse({
+    description: 'Созданный клиент без оборудования',
+    type: ClientListItemDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Некорректные данные клиента',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Access token отсутствует или недействителен',
+  })
+  @ApiNotFoundResponse({
+    description: 'Компания не найдена',
+  })
+  @ApiConflictResponse({
+    description: 'Телефон уже занят другим клиентом компании',
+  })
+  create(
+    @Req() request: AuthenticatedRequest,
+    @Body() dto: CreateClientDto,
+  ): Promise<ClientListItemDto> {
+    return this.clientsService.create(request.user.companyId, dto);
+  }
 
   @Get('companies/:companyId/clients')
   @ApiOperation({

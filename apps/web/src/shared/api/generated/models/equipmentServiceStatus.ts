@@ -6,6 +6,9 @@
  * OpenAPI spec version: 1.0
  */
 
+/**
+ * Вычисленный статус сервисного срока оборудования
+ */
 export type EquipmentServiceStatus =
   (typeof EquipmentServiceStatus)[keyof typeof EquipmentServiceStatus];
 
