@@ -4,12 +4,14 @@ import { PrismaService } from '../database/prisma/prisma.service';
 import { EquipmentServiceStatus } from '../equipment/dto/equipment-service-status.enum';
 import { Prisma } from '../generated/prisma/client';
 import { ClientsService } from './clients.service';
+import type { CreateClientDto } from './dto/create-client.dto';
 
 type PrismaMock = {
   company: {
     findUnique: jest.Mock;
   };
   client: {
+    create: jest.Mock;
     findFirst: jest.Mock;
     findMany: jest.Mock;
     count: jest.Mock;
@@ -31,6 +33,7 @@ describe('ClientsService', () => {
         findUnique: jest.fn(),
       },
       client: {
+        create: jest.fn(),
         findFirst: jest.fn(),
         findMany: jest.fn(),
         count: jest.fn(),
@@ -44,6 +47,99 @@ describe('ClientsService', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+  });
+
+  describe('create', () => {
+    const companyId = '7cfad2ad-8c32-4614-bd68-4882d7998655';
+    const clientId = '8810c8d6-67ee-49bd-82c8-4cd4865e9ac5';
+    const required = { name: 'Иван Иванов', phone: '+375291234567' };
+
+    it.each<CreateClientDto>([
+      { ...required },
+      { ...required, email: null, notes: null },
+      { ...required, email: 'ivan@example.com', notes: 'Позвонить за час.' },
+    ])(
+      'creates a client without equipment and returns details: %j',
+      async (dto) => {
+        const client = {
+          id: clientId,
+          ...required,
+          email: dto.email ?? null,
+          notes: dto.notes ?? null,
+          equipment: [],
+        };
+        prisma.company.findUnique.mockResolvedValue({ id: companyId });
+        prisma.client.create.mockResolvedValue({ id: clientId });
+        prisma.client.findFirst.mockResolvedValue(client);
+
+        const result = await clientsService.create(companyId, dto);
+
+        expect(prisma.company.findUnique).toHaveBeenCalledWith({
+          where: { id: companyId },
+          select: { id: true },
+        });
+        expect(prisma.client.create).toHaveBeenCalledWith({
+          data: {
+            companyId,
+            ...required,
+            email: dto.email,
+            notes: dto.notes,
+          },
+          select: { id: true },
+        });
+        expect(prisma.client.findFirst).toHaveBeenCalledWith(
+          expect.objectContaining({ where: { id: clientId, companyId } }),
+        );
+        expect(result).toEqual(client);
+      },
+    );
+
+    it('does not create a client when the company is missing', async () => {
+      prisma.company.findUnique.mockResolvedValue(null);
+
+      await expect(clientsService.create(companyId, required)).rejects.toThrow(
+        new NotFoundException('Компания не найдена'),
+      );
+      expect(prisma.client.create).not.toHaveBeenCalled();
+      expect(prisma.client.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('returns a conflict for a duplicate phone without updating the existing client', async () => {
+      prisma.company.findUnique.mockResolvedValue({ id: companyId });
+      prisma.client.create.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Duplicate phone', {
+          code: 'P2002',
+          clientVersion: 'test',
+        }),
+      );
+
+      await expect(clientsService.create(companyId, required)).rejects.toThrow(
+        new ConflictException(
+          'Клиент с таким телефоном уже существует в компании',
+        ),
+      );
+      expect(prisma.client.update).not.toHaveBeenCalled();
+      expect(prisma.client.findFirst).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      new Error('Connection lost'),
+      new Prisma.PrismaClientKnownRequestError('Unexpected database error', {
+        code: 'P2024',
+        clientVersion: 'test',
+      }),
+    ])(
+      'rethrows unexpected write errors without reading details: %j',
+      async (error) => {
+        prisma.company.findUnique.mockResolvedValue({ id: companyId });
+        prisma.client.create.mockRejectedValue(error);
+
+        await expect(clientsService.create(companyId, required)).rejects.toBe(
+          error,
+        );
+        expect(prisma.client.findFirst).not.toHaveBeenCalled();
+      },
+    );
   });
 
   describe('update', () => {

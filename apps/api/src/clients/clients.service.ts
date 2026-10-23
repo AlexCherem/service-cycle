@@ -11,6 +11,7 @@ import {
   getBusinessToday,
 } from '../equipment/utils/calculate-equipment-service-status';
 import { Prisma } from '../generated/prisma/client';
+import { CreateClientDto } from './dto/create-client.dto';
 import { ListClientsQueryDto } from './dto/list-clients-query.dto';
 import {
   ClientListItemDto,
@@ -25,6 +26,41 @@ const toDateOnly = (value: Date | null): string | null => {
 @Injectable()
 export class ClientsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async create(
+    companyId: string,
+    dto: CreateClientDto,
+  ): Promise<ClientListItemDto> {
+    await this.ensureCompanyExists(companyId);
+
+    try {
+      const client = await this.prisma.client.create({
+        data: {
+          companyId,
+          name: dto.name,
+          phone: dto.phone,
+          email: dto.email,
+          notes: dto.notes,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      return this.findOne(companyId, client.id);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'Клиент с таким телефоном уже существует в компании',
+        );
+      }
+
+      throw error;
+    }
+  }
 
   async findOne(
     companyId: string,

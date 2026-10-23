@@ -25,10 +25,11 @@ const authCookie = `${ACCESS_TOKEN_COOKIE_NAME}=test-access-token`;
 
 // Exercise routing, the actual guard, DTO validation and service; replace only
 // token verification and database I/O. JWT cryptography is outside this suite.
-describe('ClientsController PATCH (HTTP)', () => {
+describe('ClientsController (HTTP)', () => {
   let app: INestApplication<App>;
   const prisma = {
-    client: { update: jest.fn(), findFirst: jest.fn() },
+    company: { findUnique: jest.fn() },
+    client: { create: jest.fn(), update: jest.fn(), findFirst: jest.fn() },
   };
   const jwt = { verifyAsync: jest.fn() };
 
@@ -82,6 +83,197 @@ describe('ClientsController PATCH (HTTP)', () => {
 
   afterAll(async () => {
     await app?.close();
+  });
+
+  describe('POST /api/v1/clients', () => {
+    const createPath = '/api/v1/clients';
+    const valid = { name: 'Иван', phone: '+375291234567' };
+
+    beforeEach(() => {
+      prisma.company.findUnique.mockResolvedValue({ id: companyId });
+      prisma.client.create.mockResolvedValue({ id: clientId });
+      prisma.client.findFirst.mockResolvedValue({
+        id: clientId,
+        ...valid,
+        email: null,
+        notes: null,
+        equipment: [],
+      });
+    });
+
+    it('returns 201 and uses the token company instead of query parameters', async () => {
+      await request(app.getHttpServer())
+        .post(`${createPath}?companyId=another-company`)
+        .set('Cookie', authCookie)
+        .send({ name: '  Иван  ', phone: '8 029 123-45-67' })
+        .expect(201)
+        .expect({
+          id: clientId,
+          ...valid,
+          email: null,
+          notes: null,
+          equipment: [],
+        });
+
+      expect(prisma.client.create).toHaveBeenCalledWith({
+        data: { companyId, ...valid, email: undefined, notes: undefined },
+        select: { id: true },
+      });
+      expect(prisma.client.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: clientId, companyId } }),
+      );
+    });
+
+    it('normalizes optional contact and note fields before saving', async () => {
+      await request(app.getHttpServer())
+        .post(createPath)
+        .set('Cookie', authCookie)
+        .send({
+          ...valid,
+          email: ' IVAN@Example.com ',
+          notes: '  Позвонить за час.  ',
+        })
+        .expect(201);
+
+      expect(prisma.client.create).toHaveBeenCalledWith({
+        data: {
+          companyId,
+          ...valid,
+          email: 'ivan@example.com',
+          notes: 'Позвонить за час.',
+        },
+        select: { id: true },
+      });
+    });
+
+    it('allows explicit null optional fields', async () => {
+      await request(app.getHttpServer())
+        .post(createPath)
+        .set('Cookie', authCookie)
+        .send({ ...valid, email: null, notes: null })
+        .expect(201);
+
+      expect(prisma.client.create).toHaveBeenCalledWith({
+        data: { companyId, ...valid, email: null, notes: null },
+        select: { id: true },
+      });
+    });
+
+    it.each([
+      {},
+      { phone: valid.phone },
+      { name: valid.name },
+      { ...valid, name: null },
+      { ...valid, name: '   ' },
+      { ...valid, phone: null },
+      { ...valid, phone: '' },
+      { ...valid, phone: '123' },
+      { ...valid, email: 'incorrect-email' },
+      { ...valid, notes: 'а'.repeat(301) },
+      { ...valid, companyId: 'another-company' },
+      { ...valid, id: clientId },
+      { ...valid, equipment: [] },
+    ])(
+      'rejects invalid or forbidden input before accessing the database: %j',
+      async (body) => {
+        await request(app.getHttpServer())
+          .post(createPath)
+          .set('Cookie', authCookie)
+          .send(body)
+          .expect(400);
+
+        expect(prisma.company.findUnique).not.toHaveBeenCalled();
+        expect(prisma.client.create).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(['missing', 'invalid', 'refresh'])(
+      'rejects %s access credentials',
+      async (credentials) => {
+        if (credentials === 'invalid')
+          jwt.verifyAsync.mockRejectedValue(new Error('Invalid token'));
+        if (credentials === 'refresh')
+          jwt.verifyAsync.mockResolvedValue({
+            sub: 'user-a',
+            companyId,
+            type: 'refresh',
+          });
+
+        const req = request(app.getHttpServer()).post(createPath);
+        if (credentials !== 'missing') req.set('Cookie', authCookie);
+        await req.send(valid).expect(401);
+
+        expect(prisma.company.findUnique).not.toHaveBeenCalled();
+        expect(prisma.client.create).not.toHaveBeenCalled();
+      },
+    );
+
+    it('returns 404 without creating a client when the company is missing', async () => {
+      prisma.company.findUnique.mockResolvedValue(null);
+
+      await request(app.getHttpServer())
+        .post(createPath)
+        .set('Cookie', authCookie)
+        .send(valid)
+        .expect(404);
+
+      expect(prisma.client.create).not.toHaveBeenCalled();
+    });
+
+    it('returns 409 without updating a client when the phone already exists', async () => {
+      prisma.client.create.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Duplicate phone', {
+          code: 'P2002',
+          clientVersion: 'test',
+        }),
+      );
+
+      await request(app.getHttpServer())
+        .post(createPath)
+        .set('Cookie', authCookie)
+        .send(valid)
+        .expect(409)
+        .expect(({ body }: { body: { message: string } }) => {
+          expect(body.message).toBe(
+            'Клиент с таким телефоном уже существует в компании',
+          );
+        });
+
+      expect(prisma.client.update).not.toHaveBeenCalled();
+      expect(prisma.client.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('documents authentication, statuses and required fields in OpenAPI', () => {
+      const document = SwaggerModule.createDocument(
+        app,
+        new DocumentBuilder()
+          .addCookieAuth(
+            ACCESS_TOKEN_COOKIE_NAME,
+            { type: 'apiKey' },
+            ACCESS_TOKEN_COOKIE_NAME,
+          )
+          .build(),
+      );
+      const operation = document.paths[createPath].post;
+
+      expect(operation?.security).toEqual([{ [ACCESS_TOKEN_COOKIE_NAME]: [] }]);
+      for (const status of ['201', '400', '401', '404', '409']) {
+        expect(operation?.responses).toHaveProperty(status);
+      }
+      expect(operation?.responses).not.toHaveProperty('200');
+      expect(operation?.responses['201']).toHaveProperty(
+        'content.application/json.schema.$ref',
+        '#/components/schemas/ClientListItemDto',
+      );
+
+      const schema = document.components?.schemas?.CreateClientDto;
+      expect(schema).toHaveProperty('required', ['name', 'phone']);
+      expect(schema).not.toHaveProperty('properties.phone.nullable', true);
+      expect(schema).toHaveProperty('properties.email.nullable', true);
+      expect(schema).toHaveProperty('properties.notes.maxLength', 300);
+      expect(schema).not.toHaveProperty('properties.companyId');
+      expect(schema).not.toHaveProperty('properties.equipment');
+    });
   });
 
   it('normalizes changes and uses companyId from the token instead of query', async () => {

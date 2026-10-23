@@ -9,5 +9,6 @@
 export * from './clientEquipmentListItemDto';
 export * from './clientListItemDto';
 export * from './clientsControllerFindAllV1Params';
+export * from './createClientDto';
 export * from './listClientsResponseDto';
 export * from './updateClientDto';

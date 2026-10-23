@@ -1,4 +1,7 @@
+import { Flex } from 'antd';
+
 import { ClientsRegistry } from '@/widgets/ClientsRegistry';
+import { CreateClient } from '@/features/CreateClient';
 import { ButtonLink } from '@/shared/ui/ButtonLink';
 
 import styles from './ClientsPage.module.css';
@@ -15,9 +18,10 @@ export function ClientsPage() {
           </p>
         </div>
 
-        <ButtonLink href="/clients/import" type="primary">
-          Импортировать базу
-        </ButtonLink>
+        <Flex gap={8} wrap>
+          <ButtonLink href="/clients/import">Импортировать базу</ButtonLink>
+          <CreateClient />
+        </Flex>
       </header>
 
       <ClientsRegistry />
