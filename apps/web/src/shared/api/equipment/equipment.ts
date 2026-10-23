@@ -3,6 +3,7 @@ import type {
   EquipmentControllerFindAllV1Params,
   EquipmentDetailsResponseDto,
   ListEquipmentResponseDto,
+  UpdateEquipmentDto,
 } from '../generated/models';
 
 export function getEquipment(
@@ -23,5 +24,12 @@ export function getEquipmentById(equipmentId: string, signal?: AbortSignal) {
   return apiRequest<EquipmentDetailsResponseDto>(
     `/api/v1/equipment/${equipmentId}`,
     { signal },
+  );
+}
+
+export function updateEquipment(equipmentId: string, data: UpdateEquipmentDto) {
+  return apiRequest<EquipmentDetailsResponseDto>(
+    `/api/v1/equipment/${equipmentId}`,
+    { method: 'PATCH', json: data },
   );
 }
