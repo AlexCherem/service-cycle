@@ -1,19 +1,20 @@
 import { Select } from 'antd';
 
+import { equipmentServiceStatuses } from '@/entities/equipment';
 import type { EquipmentServiceStatus } from '@/shared/api/generated/models';
 import { SearchInput } from '@/shared/ui/SearchInput';
-
-import { equipmentServiceStatuses } from '../../config/equipmentServiceStatuses';
 
 import styles from './ClientsFilters.module.css';
 
 type ClientsFiltersProps = {
+  search: string;
   status: EquipmentServiceStatus | undefined;
   onSearch: (value: string) => void;
   onStatusChange: (value: EquipmentServiceStatus | undefined) => void;
 };
 
 export function ClientsFilters({
+  search,
   status,
   onSearch,
   onStatusChange,
@@ -22,6 +23,7 @@ export function ClientsFilters({
     <div className={styles.filters}>
       <div className={styles.search}>
         <SearchInput
+          searchValue={search}
           aria-label="Поиск клиента"
           placeholder="Имя или телефон"
           maxLength={120}

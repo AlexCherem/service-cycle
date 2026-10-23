@@ -1,28 +1,34 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Button, Table } from 'antd';
+import { Alert, Button } from 'antd';
 
-import { clientsQueryKey, getClients } from '@/entities/client';
-import { currentUserQueryOptions } from '@/entities/session';
-import type {
-  ClientListItemDto,
+import { currentUserQueryOptions } from '@/shared/api/auth';
+import { clientsQueryKey, getClients } from '@/shared/api/clients';
+import {
+  type ClientListItemDto,
   EquipmentServiceStatus,
 } from '@/shared/api/generated/models';
+import { listParams } from '@/shared/lib/url/listParams';
+import { pushSearchParams } from '@/shared/lib/url/updateSearchParams';
+import { ButtonLink } from '@/shared/ui/ButtonLink';
+import { EmptyState } from '@/shared/ui/EmptyState';
+import { Table } from '@/shared/ui/Table';
 
 import { clientsColumns } from './config/clientsColumns';
 import { ClientDrawer } from './ui/ClientDrawer/ClientDrawer';
-import { ClientsEmptyState } from './ui/ClientsEmptyState/ClientsEmptyState';
 import { ClientsFilters } from './ui/ClientsFilters/ClientsFilters';
 
 export function ClientsRegistry() {
   const { data: user } = useQuery(currentUserQueryOptions);
-  const [search, setSearch] = useState('');
-  const [status, setStatus] = useState<EquipmentServiceStatus>();
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
+  const searchParams = useSearchParams();
+  const { page, limit, search } = listParams(searchParams);
+  const status = Object.values(EquipmentServiceStatus).find(
+    (value) => value === searchParams.get('status'),
+  );
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const companyId = user?.companyId ?? '';
   const query = useQuery({
@@ -35,14 +41,13 @@ export function ClientsRegistry() {
   return (
     <>
       <ClientsFilters
+        search={search}
         status={status}
         onSearch={(value) => {
-          setSearch(value.trim());
-          setPage(1);
+          pushSearchParams({ search: value.trim(), page: null });
         }}
         onStatusChange={(value) => {
-          setStatus(value);
-          setPage(1);
+          pushSearchParams({ status: value ?? null, page: null });
         }}
       />
       {query.isError ? (
@@ -63,19 +68,27 @@ export function ClientsRegistry() {
           scroll={{ x: 850 }}
           locale={{
             emptyText: (
-              <ClientsEmptyState filtered={Boolean(search || status)} />
+              <EmptyState
+                filtered={Boolean(search || status)}
+                emptyText="Клиентов пока нет"
+                filteredText="Клиентов по этим условиям не найдено"
+              >
+                <ButtonLink href="/clients/import" type="primary">
+                  Импортировать базу
+                </ButtonLink>
+              </EmptyState>
             ),
           }}
           pagination={{
             current: page,
             pageSize: limit,
             total: query.data?.total ?? 0,
-            showSizeChanger: true,
-            pageSizeOptions: [10, 20, 50, 100],
             showTotal: (total) => `Всего клиентов: ${total}`,
             onChange: (nextPage, nextLimit) => {
-              setPage(nextLimit !== limit ? 1 : nextPage);
-              setLimit(nextLimit);
+              pushSearchParams({
+                page: nextLimit !== limit || nextPage === 1 ? null : nextPage,
+                limit: nextLimit === 20 ? null : nextLimit,
+              });
             },
           }}
           onRow={(client) => ({

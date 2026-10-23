@@ -4,15 +4,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { UploadFile, UploadProps } from 'antd';
 import { Upload } from 'antd';
 
-import { clientsQueryKey } from '@/entities/client';
-import { currentUserQueryOptions } from '@/entities/session';
 import { ApiError } from '@/shared/api';
+import { currentUserQueryOptions } from '@/shared/api/auth';
+import { importClients, previewClients } from '@/shared/api/client-imports';
+import { clientsQueryKey } from '@/shared/api/clients';
+import { equipmentQueryKey } from '@/shared/api/equipment';
 
-import {
-  downloadImportTemplate,
-  importClients,
-  previewClients,
-} from '../api/importClients';
+import { downloadImportTemplate } from '../lib/downloadImportTemplate';
 
 export function useClientsImport() {
   const { data: user } = useQuery(currentUserQueryOptions);
@@ -31,6 +29,9 @@ export function useClientsImport() {
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: clientsQueryKey(companyId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: equipmentQueryKey(companyId),
       });
     },
   });

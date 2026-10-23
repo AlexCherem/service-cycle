@@ -3,8 +3,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Checkbox, Form, Input } from 'antd';
 
-import { currentUserQueryKey } from '@/entities/session';
-import { ApiError, register } from '@/shared/api';
+import { ApiError } from '@/shared/api';
+import { currentUserQueryKey } from '@/shared/api/auth';
+import { register } from '@/shared/api/auth';
 import type { RegisterDto } from '@/shared/api/generated/models';
 
 import styles from './RegisterForm.module.css';

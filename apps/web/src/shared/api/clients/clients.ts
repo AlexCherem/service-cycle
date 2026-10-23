@@ -1,17 +1,11 @@
-import { apiRequest } from '@/shared/api';
+import { apiRequest } from '../apiClient';
 import type {
   ClientListItemDto,
   ClientsControllerFindAllV1Params,
+  CreateClientDto,
   ListClientsResponseDto,
-} from '@/shared/api/generated/models';
-
-export const clientsQueryKey = (companyId: string) =>
-  ['clients', companyId] as const;
-
-export const clientDetailsQueryKey = (
-  companyId: string,
-  clientId: string | null,
-) => [...clientsQueryKey(companyId), 'detail', clientId] as const;
+  UpdateClientDto,
+} from '../generated/models';
 
 export function getClients(
   companyId: string,
@@ -31,5 +25,19 @@ export function getClients(
 export function getClient(clientId: string, signal?: AbortSignal) {
   return apiRequest<ClientListItemDto>(`/api/v1/clients/${clientId}`, {
     signal,
+  });
+}
+
+export function createClient(data: CreateClientDto) {
+  return apiRequest<ClientListItemDto>('/api/v1/clients', {
+    method: 'POST',
+    json: data,
+  });
+}
+
+export function updateClient(clientId: string, data: UpdateClientDto) {
+  return apiRequest<ClientListItemDto>(`/api/v1/clients/${clientId}`, {
+    method: 'PATCH',
+    json: data,
   });
 }

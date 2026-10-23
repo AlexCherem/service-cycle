@@ -1,9 +1,8 @@
 import type { TableColumnsType } from 'antd';
 import { Button, Space, Tag } from 'antd';
 
+import { equipmentServiceStatuses } from '@/entities/equipment';
 import type { ClientListItemDto } from '@/shared/api/generated/models';
-
-import { equipmentServiceStatuses } from './equipmentServiceStatuses';
 
 export const clientsColumns: TableColumnsType<ClientListItemDto> = [
   {

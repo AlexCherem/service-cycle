@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Form, Input } from 'antd';
 
-import { currentUserQueryKey } from '@/entities/session';
-import { ApiError, login } from '@/shared/api';
+import { ApiError } from '@/shared/api';
+import { currentUserQueryKey } from '@/shared/api/auth';
+import { login } from '@/shared/api/auth';
 import type { LoginDto } from '@/shared/api/generated/models';
 
 export function LoginForm() {

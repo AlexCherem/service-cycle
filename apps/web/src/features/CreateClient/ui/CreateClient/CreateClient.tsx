@@ -6,14 +6,13 @@ import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Form, message, Space } from 'antd';
 
-import { ClientForm, clientsQueryKey } from '@/entities/client';
-import { currentUserQueryOptions } from '@/entities/session';
+import { ClientForm } from '@/entities/client';
 import { ApiError } from '@/shared/api';
+import { currentUserQueryOptions } from '@/shared/api/auth';
+import { clientsQueryKey, createClient } from '@/shared/api/clients';
 import type { CreateClientDto } from '@/shared/api/generated/models';
 import { getApiErrorMessage } from '@/shared/api/getApiErrorMessage';
 import { RightPanel } from '@/shared/ui/RightPanel';
-
-import { createClient } from '../../api/createClient';
 
 export function CreateClient() {
   const [open, setOpen] = useState(false);

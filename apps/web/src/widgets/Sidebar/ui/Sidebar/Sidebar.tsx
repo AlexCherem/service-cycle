@@ -65,8 +65,7 @@ const workspaceNavigationItems: NavigationItem[] = [
   {
     key: '/equipment',
     icon: <ToolOutlined />,
-    label: 'Оборудование',
-    disabled: true,
+    label: <Link href="/equipment">Оборудование</Link>,
   },
   {
     key: '/service-cycles',
