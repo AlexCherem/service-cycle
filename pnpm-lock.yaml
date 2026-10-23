@@ -168,6 +168,9 @@ importers:
       antd:
         specifier: ^6.6.1
         version: 6.6.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      dayjs:
+        specifier: ^1.11.23
+        version: 1.11.23
       next:
         specifier: 16.3.1
         version: 16.3.1(@babel/core@7.29.7(supports-color@10.2.2))(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)

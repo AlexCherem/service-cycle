@@ -1,2 +1,6 @@
-export { getEquipment, getEquipmentById } from './equipment';
-export { equipmentDetailsQueryKey, equipmentQueryKey } from './keys';
+export { getEquipment, getEquipmentById, updateEquipment } from './equipment';
+export {
+  editEquipmentMutationKey,
+  equipmentDetailsQueryKey,
+  equipmentQueryKey,
+} from './keys';
