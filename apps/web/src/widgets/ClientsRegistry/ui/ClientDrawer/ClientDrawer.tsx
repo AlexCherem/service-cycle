@@ -39,7 +39,7 @@ export function ClientDrawer({
 
     form.setFieldsValue({
       name: client.name,
-      phone: client.phone ?? '',
+      phone: client.phone,
       email: client.email ?? '',
       notes: client.notes ?? '',
     });
