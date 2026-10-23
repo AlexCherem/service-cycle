@@ -1,4 +1,6 @@
-import { Flex } from 'antd';
+import { Suspense } from 'react';
+
+import { Flex, Spin } from 'antd';
 
 import { ClientsRegistry } from '@/widgets/ClientsRegistry';
 import { CreateClient } from '@/features/CreateClient';
@@ -24,7 +26,9 @@ export function ClientsPage() {
         </Flex>
       </header>
 
-      <ClientsRegistry />
+      <Suspense fallback={<Spin />}>
+        <ClientsRegistry />
+      </Suspense>
     </section>
   );
 }

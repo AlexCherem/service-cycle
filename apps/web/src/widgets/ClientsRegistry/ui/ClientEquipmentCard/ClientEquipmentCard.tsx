@@ -1,9 +1,10 @@
+import Link from 'next/link';
+
 import { Descriptions, Tag } from 'antd';
 
+import { equipmentServiceStatuses } from '@/entities/equipment';
 import type { ClientEquipmentListItemDto } from '@/shared/api/generated/models';
 import { dateLabel } from '@/shared/lib/date/dateLabel';
-
-import { equipmentServiceStatuses } from '../../config/equipmentServiceStatuses';
 
 export function ClientEquipmentCard({
   equipment,
@@ -12,7 +13,9 @@ export function ClientEquipmentCard({
 }) {
   return (
     <div style={{ paddingBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
-      <strong>{equipment.name}</strong>{' '}
+      <Link href={`/equipment?equipmentId=${equipment.id}`}>
+        <strong>{equipment.name}</strong>
+      </Link>{' '}
       <Tag color={equipmentServiceStatuses[equipment.status].color}>
         {equipmentServiceStatuses[equipment.status].label}
       </Tag>

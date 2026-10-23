@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Spin } from 'antd';
 
-import { currentUserQueryOptions } from '@/entities/session';
 import { ApiError } from '@/shared/api';
+import { currentUserQueryOptions } from '@/shared/api/auth';
 
 import styles from './SessionGuard.module.css';
 

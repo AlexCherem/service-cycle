@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react';
 import { useIsMutating, useQuery } from '@tanstack/react-query';
 import { Alert, Button, Form, Space, Spin } from 'antd';
 
-import { EditClientForm, editClientMutationKey } from '@/features/EditClient';
-import { clientDetailsQueryKey, getClient } from '@/entities/client';
+import { EditClientForm } from '@/features/EditClient';
+import { editClientMutationKey } from '@/shared/api/clients';
+import { clientDetailsQueryKey, getClient } from '@/shared/api/clients';
 import type { UpdateClientDto } from '@/shared/api/generated/models';
 import { RightPanel } from '@/shared/ui/RightPanel';
 

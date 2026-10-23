@@ -1,14 +1,14 @@
 import { Descriptions, Empty, Flex } from 'antd';
 
 import type { ClientListItemDto } from '@/shared/api/generated/models';
+import { DetailsSection } from '@/shared/ui/DetailsSection';
 
 import { ClientEquipmentCard } from '../ClientEquipmentCard/ClientEquipmentCard';
 
 export function ClientDetails({ client }: { client: ClientListItemDto }) {
   return (
     <Flex vertical gap="large">
-      <Flex component="section" vertical gap="middle">
-        <h3 style={{ margin: 0 }}>Клиент</h3>
+      <DetailsSection title="Клиент">
         <Descriptions
           column={1}
           items={[
@@ -28,9 +28,8 @@ export function ClientDetails({ client }: { client: ClientListItemDto }) {
             },
           ]}
         />
-      </Flex>
-      <Flex component="section" vertical gap="middle">
-        <h3 style={{ margin: 0 }}>Оборудование клиента</h3>
+      </DetailsSection>
+      <DetailsSection title="Оборудование клиента">
         {client.equipment.length ? (
           <Flex vertical gap="middle">
             {client.equipment.map((equipment) => (
@@ -40,7 +39,7 @@ export function ClientDetails({ client }: { client: ClientListItemDto }) {
         ) : (
           <Empty description="Оборудование не добавлено" />
         )}
-      </Flex>
+      </DetailsSection>
     </Flex>
   );
 }

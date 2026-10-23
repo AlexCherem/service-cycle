@@ -2,19 +2,20 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { FormInstance } from 'antd';
 import { Alert, Form } from 'antd';
 
+import { ClientForm } from '@/entities/client';
+import { ApiError } from '@/shared/api';
 import {
   clientDetailsQueryKey,
-  ClientForm,
   clientsQueryKey,
-} from '@/entities/client';
-import { ApiError } from '@/shared/api';
+  editClientMutationKey,
+  updateClient,
+} from '@/shared/api/clients';
+import { equipmentQueryKey } from '@/shared/api/equipment';
 import type {
   ClientListItemDto,
   UpdateClientDto,
 } from '@/shared/api/generated/models';
 import { getApiErrorMessage } from '@/shared/api/getApiErrorMessage';
-
-import { editClientMutationKey, updateClient } from '../api/updateClient';
 
 type EditClientFormProps = {
   form: FormInstance<UpdateClientDto>;
@@ -42,9 +43,12 @@ export function EditClientForm({
         clientDetailsQueryKey(companyId, client.id),
         updated,
       );
-      await queryClient.invalidateQueries({
-        queryKey: clientsQueryKey(companyId),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: clientsQueryKey(companyId) }),
+        queryClient.invalidateQueries({
+          queryKey: equipmentQueryKey(companyId),
+        }),
+      ]);
     },
   });
 

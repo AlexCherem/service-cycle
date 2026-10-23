@@ -1,8 +1,5 @@
-import { apiRequest } from '@/shared/api';
-import type {
-  ImportPreviewDto,
-  ImportResultDto,
-} from '@/shared/api/generated/models';
+import { apiRequest } from '../apiClient';
+import type { ImportPreviewDto, ImportResultDto } from '../generated/models';
 
 function importPath(companyId: string) {
   return `/api/v1/companies/${companyId}/client-imports`;
@@ -31,14 +28,8 @@ export function importClients(
   });
 }
 
-export async function downloadImportTemplate(companyId: string) {
-  const blob = await apiRequest<Blob>(`${importPath(companyId)}/template`, {
+export function getImportTemplate(companyId: string) {
+  return apiRequest<Blob>(`${importPath(companyId)}/template`, {
     responseType: 'blob',
   });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'service-cycle-client-import-template.xlsx';
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
