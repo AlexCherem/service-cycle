@@ -50,10 +50,9 @@ export class ClientListItemDto {
 
   @ApiProperty({
     example: '+375291234567',
-    nullable: true,
     type: String,
   })
-  phone!: string | null;
+  phone!: string;
 
   @ApiProperty({
     example: 'ivan@example.com',

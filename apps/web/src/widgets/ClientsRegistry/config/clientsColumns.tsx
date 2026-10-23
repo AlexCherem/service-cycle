@@ -18,7 +18,6 @@ export const clientsColumns: TableColumnsType<ClientListItemDto> = [
   {
     title: 'Телефон',
     dataIndex: 'phone',
-    render: (value: string | null) => value || '—',
   },
   {
     title: 'Email',

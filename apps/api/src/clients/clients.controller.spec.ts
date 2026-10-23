@@ -66,7 +66,7 @@ describe('ClientsController (HTTP)', () => {
     prisma.client.findFirst.mockResolvedValue({
       id: clientId,
       name: 'Иван',
-      phone: null,
+      phone: '+375291234567',
       email: null,
       notes: 'Существующее примечание',
       equipment: [
@@ -511,11 +511,16 @@ describe('ClientsController (HTTP)', () => {
     expect(schema).toHaveProperty('properties.notes.maxLength', 300);
     expect(schema).not.toHaveProperty('required');
     const responseSchema = document.components?.schemas?.ClientListItemDto;
+    expect(responseSchema).toHaveProperty('properties.phone.type', 'string');
+    expect(responseSchema).not.toHaveProperty(
+      'properties.phone.nullable',
+      true,
+    );
     expect(responseSchema).toHaveProperty('properties.notes.nullable', true);
     expect(responseSchema).toHaveProperty('properties.notes.maxLength', 300);
     expect(responseSchema).toHaveProperty(
       'required',
-      expect.arrayContaining(['notes']),
+      expect.arrayContaining(['phone', 'notes']),
     );
   });
 });

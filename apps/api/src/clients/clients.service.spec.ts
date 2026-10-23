@@ -235,7 +235,7 @@ describe('ClientsService', () => {
         prisma.client.findFirst.mockResolvedValue({
           id: clientId,
           name: 'Новое имя',
-          phone: null,
+          phone: '+375291234567',
           email: null,
           notes,
           equipment: [],
@@ -244,6 +244,7 @@ describe('ClientsService', () => {
         const result = await clientsService.update(companyId, clientId, dto);
 
         expect(result.notes).toBe(notes);
+        expect(result.phone).toBe('+375291234567');
 
         expect(prisma.client.update).toHaveBeenCalledWith({
           where: { id: clientId, companyId },

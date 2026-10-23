@@ -13,7 +13,7 @@ export function ClientDetails({ client }: { client: ClientListItemDto }) {
           column={1}
           items={[
             { key: 'name', label: 'Имя', children: client.name },
-            { key: 'phone', label: 'Телефон', children: client.phone || '—' },
+            { key: 'phone', label: 'Телефон', children: client.phone },
             { key: 'email', label: 'Email', children: client.email || '—' },
             {
               key: 'notes',

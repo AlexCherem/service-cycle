@@ -10,8 +10,7 @@ import type { ClientEquipmentListItemDto } from './clientEquipmentListItemDto';
 export interface ClientListItemDto {
   id: string;
   name: string;
-  /** @nullable */
-  phone: string | null;
+  phone: string;
   /** @nullable */
   email: string | null;
   /**

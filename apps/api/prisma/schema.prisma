@@ -50,7 +50,7 @@ model Client {
   id        String      @id @default(uuid()) @db.Uuid
   companyId String      @map("company_id") @db.Uuid
   name      String
-  phone     String?
+  phone     String
   email     String?
   company   Company     @relation(fields: [companyId], references: [id], onDelete: Restrict)
   equipment Equipment[]
